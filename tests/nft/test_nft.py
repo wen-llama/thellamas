@@ -135,6 +135,16 @@ def test_whitelist_mint_three(token, alice, deployer):
     assert alice == token.ownerOf(1)
     assert alice == token.ownerOf(2)
 
+def test_whitelist_mint_twenty(token, alice, deployer):
+    token.start_wl_mint()
+    alice_encoded = encode(["address"], [alice.address])
+    alice_hashed = web3.keccak(alice_encoded)
+    alice_signable_message = encode_defunct(alice_hashed)
+    signed_message = Account.sign_message(alice_signable_message, deployer.private_key)
+    token.whitelistMint(20, signed_message.signature, {'from': alice, 'value': web3.toWei(0.2, 'ether')})
+
+    assert token.balanceOf(alice) == 20
+
 def test_whitelist_mint_not_started(token, alice, deployer):
     alice_encoded = encode(["address"], [alice.address])
     alice_hashed = web3.keccak(alice_encoded)
