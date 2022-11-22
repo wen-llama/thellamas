@@ -75,7 +75,6 @@ name: public(String[32])
 
 # Permissions
 owner: public(address)
-minter: public(address)
 
 # URI
 base_uri: public(String[128])
@@ -118,7 +117,6 @@ def __init__():
     self.name = "The Llamas"
 
     self.owner = msg.sender
-    self.minter = msg.sender
 
     self.contract_uri = "ipfs://QmTPTu31EEFawxbXEiAaZehLajRAKc7YhxPkTSg31SNVSe"
     self.default_uri = "ipfs://QmPQZadNVNeJ729toJ3ZTjSvC2xhgsQDJuwfSJRN43T2eu"
@@ -419,11 +417,13 @@ def whitelistMint(mint_amount: uint256, sig: Bytes[65]):
     """
     @notice Function to mint a token for whitelisted users
     """
+
+    # Checks
     assert self.wl_mint_started == True, "WL Mint not started yet"
     assert mint_amount <= max_mint_per_tx, "Transaction exceeds max mint amount"
     assert self.checkSignature(sig, msg.sender) == True, "Signature is not valid"
     assert self.blocklist[msg.sender] == False, "The whitelisted address was already used"
-    assert msg.value >= cost * (mint_amount), "Not enough ether provided"
+    assert msg.value >= cost * mint_amount, "Not enough ether provided"
 
     for i in range(max_mint_per_tx):
         if (i >= mint_amount):
@@ -525,7 +525,7 @@ def set_contract_uri(new_uri: String[66]):
     @param new_uri New URI for the contract
     """
 
-    assert msg.sender in [self.owner, self.minter]  # dev: Only Admin
+    assert msg.sender == self.owner # dev: Only Admin
     self.contract_uri = new_uri
 
 
@@ -546,20 +546,9 @@ def set_revealed(flag: bool):
     @notice Admin function to reveal collection.  If not revealed, all NFTs show default_uri
     @param flag Boolean, True to reveal, False to conceal
     """
-    assert msg.sender in [self.owner, self.minter]
+    assert msg.sender == self.owner
     self.revealed = flag
 
-
-@external
-def set_minter(new_address: address):
-    """
-    @notice Admin function to set a new minter address
-    @dev Update the address authorized to mint
-    @param new_address New minter address
-    """
-
-    assert msg.sender in [self.owner, self.minter]
-    self.minter = new_address
 
 @external
 def withdraw():

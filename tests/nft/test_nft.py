@@ -106,6 +106,14 @@ def test_mint(minted, alice, minted_token_id):
     txn_receipt = history[-1]
     _verifyTransferEvent(txn_receipt, ZERO_ADDRESS, alice, minted_token_id)
 
+def test_mint_public_sale_not_started(token, alice, deployer):
+    with brownie.reverts("Public sale not started yet"):
+        token.mint(1, {'from': alice, 'value': web3.toWei(0.01, 'ether')})
+
+def test_mint_too_many(token, alice, deployer):
+    token.start_public_sale()
+    with brownie.reverts("Exceeds max amount per transaction allowed"):
+        token.mint(21, {'from': alice, 'value': web3.toWei(0.01, 'ether')}) 
 
 def test_whitelist_mint_one(wl_minted, alice, minted_token_id):
     assert wl_minted.balanceOf(alice) == 1
@@ -170,19 +178,23 @@ def test_whitelist_mint_three_not_enough_value(token, alice, deployer):
     alice_signable_message = encode_defunct(alice_hashed)
     signed_message = Account.sign_message(alice_signable_message, deployer.private_key)
     with brownie.reverts("Not enough ether provided"):
-        token.whitelistMint(3, signed_message.signature, {'from': alice, 'value': web3.toWei(0.029, 'ether')}) 
+        token.whitelistMint(3, signed_message.signature, {'from': alice, 'value': web3.toWei(0.029, 'ether')})
 
-#
-# Only the contract owner can mint
-#
-# def test_mint_notOwner(token):
-#    me = accounts[0];
-#    bob = accounts[1]
-#    tokenID = 1;
-#
-#    # Try to mint
-#    with brownie.reverts(): #"Sender not contract owner"):
-#        token._mint(tokenID, {"from": bob});
+def test_withdraw(token, alice, deployer):
+    token.start_public_sale()
+    token.mint(1, {'from': alice, 'value': web3.toWei(0.01, 'ether')})
+    balanceBefore = deployer.balance()
+    token.withdraw({'from': deployer})
+    balanceAfter = deployer.balance()
+
+    assert balanceAfter == balanceBefore + web3.toWei(0.01, 'ether')
+
+def test_withdraw_only_owner(token, alice, deployer):
+    token.start_public_sale()
+    token.mint(1, {'from': alice, 'value': web3.toWei(0.01, 'ether')})
+
+    with brownie.reverts():
+        token.withdraw({'from': alice})
 
 #
 # Cannot mint an existing token
