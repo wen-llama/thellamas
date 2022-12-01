@@ -4,9 +4,13 @@ import pytest
 from brownie import (
     Llama,
     ERC721TokenReceiverImplementation,
-    accounts
+    accounts,
+    web3
 )
 
+from eth_account.messages import encode_defunct
+from eth_account import Account
+from eth_abi import encode
 
 @pytest.fixture(scope="function", autouse=True)
 def isolate(fn_isolation):
@@ -15,66 +19,79 @@ def isolate(fn_isolation):
     pass
 
 
-@pytest.fixture(scope="module")
+@pytest.fixture(scope="function")
 def token(Llama, deployer):
     token = Llama.deploy({"from": deployer})
     return token
 
 
-@pytest.fixture(scope="module")
+@pytest.fixture(scope="function")
 def token_minted(token, deployer):
     token.mint(deployer)
     return token
 
 
-@pytest.fixture(scope="module")
+@pytest.fixture(scope="function")
 def deployer():
-    return accounts[0]
+    return accounts.add()
 
 
-@pytest.fixture(scope="module")
+@pytest.fixture(scope="function")
 def alice():
     return accounts[1]
 
 
-@pytest.fixture(scope="module")
+@pytest.fixture(scope="function")
 def bob():
     return accounts[2]
 
 
-@pytest.fixture(scope="module")
+@pytest.fixture(scope="function")
 def charlie():
     return accounts[3]
 
 
-@pytest.fixture(scope="module")
+@pytest.fixture(scope="function")
 def minted(token, alice):
-    token.mint(alice)
+    token.start_public_sale()
+    token.mint(1, {'from': alice, 'value': web3.toWei(0.01, 'ether')})
     return token
 
 
-@pytest.fixture(scope="module")
+@pytest.fixture(scope="function")
+def wl_minted(token, alice, deployer):
+    token.start_wl_mint()
+    # Sign a message from the wl_signer for alice
+    alice_encoded = encode(["address"], [alice.address])
+    alice_hashed = web3.keccak(alice_encoded)
+    alice_signable_message = encode_defunct(alice_hashed)
+    signed_message = Account.sign_message(alice_signable_message, deployer.private_key)
+    token.whitelistMint(1, signed_message.signature, {'from': alice, 'value': web3.toWei(0.01, 'ether')})
+    
+    return token
+
+
+@pytest.fixture(scope="function")
 def minted_token_id():
     return 0
 
 
-
 # If there is a minter contract separate from the NFT, deploy here
-@pytest.fixture(scope="module")
+@pytest.fixture(scope="function")
 def minter(token):
     return token
 
 # If there is a premint, hardcode the number of tokens preminted here for tests
-@pytest.fixture(scope="module")
+@pytest.fixture(scope="function")
 def premint():
     return 0
 
 
-@pytest.fixture(scope="module")
+@pytest.fixture(scope="function")
 def token_metadata():
     return {"name": "The Llamas", "symbol": "LLAMA"}
 
 
-@pytest.fixture(scope="module")
+@pytest.fixture(scope="function")
 def tokenReceiver(deployer):
     return ERC721TokenReceiverImplementation.deploy({"from": deployer})

@@ -1,7 +1,10 @@
 import brownie
 import hexbytes
 import pytest
-from brownie import ZERO_ADDRESS, accounts, history
+from brownie import ZERO_ADDRESS, accounts, history, web3
+from eth_account.messages import encode_defunct
+from eth_account import Account
+from eth_abi import encode
 
 #
 # These tests are meant to be executed with brownie. To run them:
@@ -19,7 +22,7 @@ def _ensureToken(token, token_id, owner):
     stop_mint = False
     i = 0
     while stop_mint is False:
-        _mint(token, owner, token_id)
+        _mint(token, owner)
         try:
             if token.ownerOf(token_id) == owner:
                 stop_mint = True
@@ -31,8 +34,9 @@ def _ensureToken(token, token_id, owner):
         i += 1
 
 
-def _mint(token, owner, token_id=1):
-    token.mint(owner, {"from": token.owner()})
+def _mint(token, minter):
+    token.start_public_sale()
+    token.mint(1, {"from": minter.address, "value": web3.toWei(0.01, 'ether')})
 
 
 def _ensureNotToken(token, tokenID):
@@ -102,18 +106,105 @@ def test_mint(minted, alice, minted_token_id):
     txn_receipt = history[-1]
     _verifyTransferEvent(txn_receipt, ZERO_ADDRESS, alice, minted_token_id)
 
+def test_mint_public_sale_not_started(token, alice, deployer):
+    with brownie.reverts("Public sale not started yet"):
+        token.mint(1, {'from': alice, 'value': web3.toWei(0.01, 'ether')})
 
-#
-# Only the contract owner can mint
-#
-# def test_mint_notOwner(token):
-#    me = accounts[0];
-#    bob = accounts[1]
-#    tokenID = 1;
-#
-#    # Try to mint
-#    with brownie.reverts(): #"Sender not contract owner"):
-#        token._mint(tokenID, {"from": bob});
+def test_mint_too_many(token, alice, deployer):
+    token.start_public_sale()
+    with brownie.reverts("Exceeds max amount per transaction allowed"):
+        token.mint(21, {'from': alice, 'value': web3.toWei(0.01, 'ether')}) 
+
+def test_whitelist_mint_one(wl_minted, alice, minted_token_id):
+    assert wl_minted.balanceOf(alice) == 1
+    assert alice == wl_minted.ownerOf(minted_token_id)
+    txn_receipt = history[-1]
+    _verifyTransferEvent(txn_receipt, ZERO_ADDRESS, alice, minted_token_id)
+
+def test_whitelist_mint_three(token, alice, deployer):
+    token.start_wl_mint()
+    # Sign a message from the wl_signer for alice
+    alice_encoded = encode(["address"], [alice.address])
+    alice_hashed = web3.keccak(alice_encoded)
+    alice_signable_message = encode_defunct(alice_hashed)
+    signed_message = Account.sign_message(alice_signable_message, deployer.private_key)
+    token.whitelistMint(3, signed_message.signature, {'from': alice, 'value': web3.toWei(0.03, 'ether')})
+
+    assert token.balanceOf(alice) == 3
+    assert alice == token.ownerOf(0)
+    assert alice == token.ownerOf(1)
+    assert alice == token.ownerOf(2)
+
+def test_whitelist_mint_twenty(token, alice, deployer):
+    token.start_wl_mint()
+    alice_encoded = encode(["address"], [alice.address])
+    alice_hashed = web3.keccak(alice_encoded)
+    alice_signable_message = encode_defunct(alice_hashed)
+    signed_message = Account.sign_message(alice_signable_message, deployer.private_key)
+    token.whitelistMint(20, signed_message.signature, {'from': alice, 'value': web3.toWei(0.2, 'ether')})
+
+    assert token.balanceOf(alice) == 20
+
+def test_whitelist_mint_not_started(token, alice, deployer):
+    alice_encoded = encode(["address"], [alice.address])
+    alice_hashed = web3.keccak(alice_encoded)
+    alice_signable_message = encode_defunct(alice_hashed)
+    signed_message = Account.sign_message(alice_signable_message, deployer.private_key)
+    with brownie.reverts("WL Mint not started yet"):
+        token.whitelistMint(1, signed_message.signature, {'from': alice, 'value': web3.toWei(0.01, 'ether')})
+
+def test_whitelist_mint_address_already_used(token, alice, deployer):
+    token.start_wl_mint()
+    alice_encoded = encode(["address"], [alice.address])
+    alice_hashed = web3.keccak(alice_encoded)
+    alice_signable_message = encode_defunct(alice_hashed)
+    signed_message = Account.sign_message(alice_signable_message, deployer.private_key)
+    token.whitelistMint(1, signed_message.signature, {'from': alice, 'value': web3.toWei(0.01, 'ether')})
+    with brownie.reverts("The whitelisted address was already used"):
+        token.whitelistMint(1, signed_message.signature, {'from': alice, 'value': web3.toWei(0.01, 'ether')})
+
+def test_whitelist_mint_too_many(token, alice, deployer):
+    token.start_wl_mint()
+    alice_encoded = encode(["address"], [alice.address])
+    alice_hashed = web3.keccak(alice_encoded)
+    alice_signable_message = encode_defunct(alice_hashed)
+    signed_message = Account.sign_message(alice_signable_message, deployer.private_key)
+    with brownie.reverts("Transaction exceeds max mint amount"):
+        token.whitelistMint(21, signed_message.signature, {'from': alice, 'value': web3.toWei(0.21, 'ether')})    
+
+def test_whitelist_mint_one_not_enough_value(token, alice, deployer):
+    token.start_wl_mint()
+    alice_encoded = encode(["address"], [alice.address])
+    alice_hashed = web3.keccak(alice_encoded)
+    alice_signable_message = encode_defunct(alice_hashed)
+    signed_message = Account.sign_message(alice_signable_message, deployer.private_key)
+    with brownie.reverts("Not enough ether provided"):
+        token.whitelistMint(1, signed_message.signature, {'from': alice, 'value': web3.toWei(0.009, 'ether')})
+    
+def test_whitelist_mint_three_not_enough_value(token, alice, deployer):
+    token.start_wl_mint()
+    alice_encoded = encode(["address"], [alice.address])
+    alice_hashed = web3.keccak(alice_encoded)
+    alice_signable_message = encode_defunct(alice_hashed)
+    signed_message = Account.sign_message(alice_signable_message, deployer.private_key)
+    with brownie.reverts("Not enough ether provided"):
+        token.whitelistMint(3, signed_message.signature, {'from': alice, 'value': web3.toWei(0.029, 'ether')})
+
+def test_withdraw(token, alice, deployer):
+    token.start_public_sale()
+    token.mint(1, {'from': alice, 'value': web3.toWei(0.01, 'ether')})
+    balanceBefore = deployer.balance()
+    token.withdraw({'from': deployer})
+    balanceAfter = deployer.balance()
+
+    assert balanceAfter == balanceBefore + web3.toWei(0.01, 'ether')
+
+def test_withdraw_only_owner(token, alice, deployer):
+    token.start_public_sale()
+    token.mint(1, {'from': alice, 'value': web3.toWei(0.01, 'ether')})
+
+    with brownie.reverts():
+        token.withdraw({'from': alice})
 
 #
 # Cannot mint an existing token
@@ -438,7 +529,7 @@ def test_transfer_from_approved(token, alice, bob, charlie):
 # Test setting and getting approval
 #
 def test_approval(token, alice, bob, charlie):
-    token_id = 1
+    token_id = 0
 
     # Make sure that token does not yet exist
     _ensureNotToken(token, token_id)
