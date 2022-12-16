@@ -20,8 +20,9 @@ def isolate(fn_isolation):
 
 
 @pytest.fixture(scope="function")
-def token(Llama, deployer):
-    token = Llama.deploy({"from": deployer})
+def token(Llama, deployer, preminter):
+    premint_addresses = [preminter] * 20
+    token = Llama.deploy(premint_addresses, {"from": deployer})
     return token
 
 
@@ -52,6 +53,11 @@ def charlie():
 
 
 @pytest.fixture(scope="function")
+def preminter():
+    return accounts[4]
+
+
+@pytest.fixture(scope="function")
 def minted(token, alice):
     token.start_public_sale()
     token.mint(1, {'from': alice, 'value': web3.toWei(0.01, 'ether')})
@@ -73,7 +79,7 @@ def wl_minted(token, alice, deployer):
 
 @pytest.fixture(scope="function")
 def minted_token_id():
-    return 0
+    return 20
 
 
 # If there is a minter contract separate from the NFT, deploy here
@@ -84,7 +90,7 @@ def minter(token):
 # If there is a premint, hardcode the number of tokens preminted here for tests
 @pytest.fixture(scope="function")
 def premint():
-    return 0
+    return 20
 
 
 @pytest.fixture(scope="function")

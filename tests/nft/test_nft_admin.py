@@ -36,11 +36,6 @@ def test_rando_cannot_set_owner(token, alice):
         token.set_owner(alice, {"from": alice})
 
 
-def test_rando_cannot_set_minter(token, alice):
-    with brownie.reverts():
-        token.set_minter(alice, {"from": alice})
-
-
 def test_rando_cannot_set_base_uri(token, alice):
     with brownie.reverts():
         token.set_base_uri("malware", {"from": alice})

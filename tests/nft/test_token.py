@@ -17,10 +17,10 @@ def test_symbol(token, token_metadata):
     assert token.symbol() == token_metadata["symbol"]
 
 
-# Test balanceOf - initially, the entire supply should be
-def test_balanceOf(minted, alice, token, minted_token_id):
+# Test balanceOf
+def test_balanceOf(minted, alice, token, minted_token_id, premint):
     assert token.ownerOf(minted_token_id) == alice
-    assert token.balanceOf(alice.address) == token.totalSupply()
+    assert token.balanceOf(alice.address) == token.totalSupply() - premint
 
 
 # Test a valid transfer

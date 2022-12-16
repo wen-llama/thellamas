@@ -103,6 +103,7 @@ revealed: public(bool)
 default_uri: public(String[150])
 
 max_supply: constant(uint256) = 1111
+max_premint: constant(uint256) = 20
 max_mint_per_tx: constant(uint256) = 20
 cost: constant(uint256) = as_wei_value(0.01, "ether")
 
@@ -112,7 +113,7 @@ wl_signer: public(address)
 blocklist: HashMap[address, bool]
 
 @external
-def __init__():
+def __init__(specials: address[max_premint]):
     self.symbol = "LLAMA"
     self.name = "The Llamas"
 
@@ -125,6 +126,13 @@ def __init__():
     self.public_sale_started = False
 
     self.wl_signer = msg.sender
+
+    for i in range(max_premint):
+        token_id: uint256 = self.token_count
+        self._add_token_to(specials[i], token_id)
+        self.token_count += 1
+
+        log Transfer(empty(address), specials[i], token_id)
 
 @pure
 @external
