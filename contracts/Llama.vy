@@ -113,7 +113,7 @@ wl_signer: public(address)
 blocklist: HashMap[address, bool]
 
 @external
-def __init__(specials: address[max_premint]):
+def __init__(preminters: address[max_premint]):
     self.symbol = "LLAMA"
     self.name = "The Llamas"
 
@@ -129,10 +129,10 @@ def __init__(specials: address[max_premint]):
 
     for i in range(max_premint):
         token_id: uint256 = self.token_count
-        self._add_token_to(specials[i], token_id)
+        self._add_token_to(preminters[i], token_id)
         self.token_count += 1
 
-        log Transfer(empty(address), specials[i], token_id)
+        log Transfer(empty(address), preminters[i], token_id)
 
 @pure
 @external
