@@ -437,7 +437,7 @@ def allowlistMint(mint_amount: uint256, sig: Bytes[65]):
     assert self.al_blocklist[msg.sender] == False, "The allowlisted address was already used"
     assert msg.value >= cost * mint_amount, "Not enough ether provided"
 
-    for i in range(max_mint_per_tx):
+    for i in range(max_al_mint_per_tx):
         if (i >= mint_amount):
             break
             
