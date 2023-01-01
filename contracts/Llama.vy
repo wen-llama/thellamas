@@ -104,8 +104,7 @@ default_uri: public(String[150])
 
 max_supply: constant(uint256) = 1111
 max_premint: constant(uint256) = 20
-max_mint_per_tx: constant(uint256) = 20
-max_al_mint_per_tx: constant(uint256) = 3
+max_mint_per_tx: constant(uint256) = 3
 cost: constant(uint256) = as_wei_value(0.01, "ether")
 
 al_mint_started: public(bool)
@@ -432,12 +431,12 @@ def allowlistMint(mint_amount: uint256, sig: Bytes[65]):
 
     # Checks
     assert self.al_mint_started == True, "AL Mint not started yet"
-    assert mint_amount <= max_al_mint_per_tx, "Transaction exceeds max mint amount"
-    assert self.checkAlSignature(sig, msg.sender) == True, "Signature is not valid"
+    assert mint_amount <= max_mint_per_tx, "Transaction exceeds max mint amount"
+    assert self.checkAlSignature(sig, msg.sender, mint_amount) == True, "Signature is not valid"
     assert self.al_blocklist[msg.sender] == False, "The allowlisted address was already used"
     assert msg.value >= cost * mint_amount, "Not enough ether provided"
 
-    for i in range(max_al_mint_per_tx):
+    for i in range(max_mint_per_tx):
         if (i >= mint_amount):
             break
             
@@ -683,11 +682,11 @@ def checkWlSignature(sig: Bytes[65], sender: address) -> bool:
 
 @internal
 @view
-def checkAlSignature(sig: Bytes[65], sender: address) -> bool:
+def checkAlSignature(sig: Bytes[65], sender: address, mint_amount: uint256) -> bool:
     r: uint256 = convert(slice(sig, 0, 32), uint256)
     s: uint256 = convert(slice(sig, 32, 32), uint256)
     v: uint256 = convert(slice(sig, 64, 1), uint256)
-    ethSignedHash: bytes32 = keccak256(concat(b'\x19Ethereum Signed Message:\n32', keccak256(_abi_encode("allowlist:", sender))))
+    ethSignedHash: bytes32 = keccak256(concat(b'\x19Ethereum Signed Message:\n32', keccak256(_abi_encode("allowlist:", sender, mint_amount))))
     signer: address = ecrecover(ethSignedHash, v, r, s)
 
     return self.wl_signer == ecrecover(ethSignedHash, v, r, s)

@@ -67,7 +67,7 @@ def minted(token, alice):
 def al_minted(token, alice, deployer):
     token.start_al_mint()
     # Sign a message from the wl_signer for alice
-    alice_encoded = encode(["string", "address"], ["allowlist:", alice.address])
+    alice_encoded = encode(["string", "address", "uint256"], ["allowlist:", alice.address, 1])
     alice_hashed = web3.keccak(alice_encoded)
     alice_signable_message = encode_defunct(alice_hashed)
     signed_message = Account.sign_message(alice_signable_message, deployer.private_key)

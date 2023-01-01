@@ -113,7 +113,7 @@ def test_mint_public_sale_not_started(token, alice, deployer):
 def test_mint_too_many(token, alice, deployer):
     token.start_public_sale()
     with brownie.reverts("Exceeds max amount per transaction allowed"):
-        token.mint(21, {'from': alice, 'value': web3.toWei(0.01, 'ether')}) 
+        token.mint(4, {'from': alice, 'value': web3.toWei(0.01, 'ether')}) 
 
 def test_allowlist_mint_one(al_minted, alice, minted_token_id):
     assert al_minted.balanceOf(alice) == 1
@@ -124,7 +124,7 @@ def test_allowlist_mint_one(al_minted, alice, minted_token_id):
 def test_allowlist_mint_max(token, alice, deployer):
     token.start_al_mint()
     # Sign a message from the wl_signer for alice
-    alice_encoded = encode(["string", "address"], ["allowlist:", alice.address])
+    alice_encoded = encode(["string", "address", "uint256"], ["allowlist:", alice.address, 3])
     alice_hashed = web3.keccak(alice_encoded)
     alice_signable_message = encode_defunct(alice_hashed)
     signed_message = Account.sign_message(alice_signable_message, deployer.private_key)
@@ -140,7 +140,7 @@ def test_allowlist_mint_not_started(token, alice, deployer):
 
 def test_allowlist_mint_address_already_used(token, alice, deployer):
     token.start_al_mint()
-    alice_encoded = encode(["string", "address"], ["allowlist:", alice.address])
+    alice_encoded = encode(["string", "address", "uint256"], ["allowlist:", alice.address, 1])
     alice_hashed = web3.keccak(alice_encoded)
     alice_signable_message = encode_defunct(alice_hashed)
     signed_message = Account.sign_message(alice_signable_message, deployer.private_key)
@@ -159,12 +159,21 @@ def test_allowlist_mint_too_many(token, alice, deployer):
 
 def test_allowlist_mint_one_not_enough_value(token, alice, deployer):
     token.start_al_mint()
-    alice_encoded = encode(["string", "address"], ["allowlist:", alice.address])
+    alice_encoded = encode(["string", "address", "uint256"], ["allowlist:", alice.address, 1])
     alice_hashed = web3.keccak(alice_encoded)
     alice_signable_message = encode_defunct(alice_hashed)
     signed_message = Account.sign_message(alice_signable_message, deployer.private_key)
     with brownie.reverts("Not enough ether provided"):
         token.allowlistMint(1, signed_message.signature, {'from': alice, 'value': web3.toWei(0.009, 'ether')})
+
+def test_allowlist_mint_not_approved_amount(token, alice, deployer):
+    token.start_al_mint()
+    alice_encoded = encode(["string", "address", "uint256"], ["allowlist:", alice.address, 1])
+    alice_hashed = web3.keccak(alice_encoded)
+    alice_signable_message = encode_defunct(alice_hashed)
+    signed_message = Account.sign_message(alice_signable_message, deployer.private_key)
+    with brownie.reverts("Signature is not valid"):
+        token.allowlistMint(3, signed_message.signature, {'from': alice, 'value': web3.toWei(0.009, 'ether')}) 
 
 def test_whitelist_mint_one(wl_minted, alice, minted_token_id):
     assert wl_minted.balanceOf(alice) == 1
@@ -172,7 +181,7 @@ def test_whitelist_mint_one(wl_minted, alice, minted_token_id):
     txn_receipt = history[-1]
     _verifyTransferEvent(txn_receipt, ZERO_ADDRESS, alice, minted_token_id)
 
-def test_whitelist_mint_three(token, alice, deployer):
+def test_whitelist_mint_max(token, alice, deployer):
     token.start_wl_mint()
     # Sign a message from the wl_signer for alice
     alice_encoded = encode(["string", "address"], ["whitelist:", alice.address])
@@ -185,16 +194,6 @@ def test_whitelist_mint_three(token, alice, deployer):
     assert alice == token.ownerOf(20)
     assert alice == token.ownerOf(21)
     assert alice == token.ownerOf(22)
-
-def test_whitelist_mint_max(token, alice, deployer):
-    token.start_wl_mint()
-    alice_encoded = encode(["string", "address"], ["whitelist:", alice.address])
-    alice_hashed = web3.keccak(alice_encoded)
-    alice_signable_message = encode_defunct(alice_hashed)
-    signed_message = Account.sign_message(alice_signable_message, deployer.private_key)
-    token.whitelistMint(20, signed_message.signature, {'from': alice, 'value': web3.toWei(0.2, 'ether')})
-
-    assert token.balanceOf(alice) == 20
 
 def test_whitelist_mint_not_started(token, alice, deployer):
     alice_encoded = encode(["string", "address"], ["whitelist:", alice.address])
@@ -221,7 +220,7 @@ def test_whitelist_mint_too_many(token, alice, deployer):
     alice_signable_message = encode_defunct(alice_hashed)
     signed_message = Account.sign_message(alice_signable_message, deployer.private_key)
     with brownie.reverts("Transaction exceeds max mint amount"):
-        token.whitelistMint(21, signed_message.signature, {'from': alice, 'value': web3.toWei(0.21, 'ether')})    
+        token.whitelistMint(4, signed_message.signature, {'from': alice, 'value': web3.toWei(0.21, 'ether')})    
 
 def test_whitelist_mint_one_not_enough_value(token, alice, deployer):
     token.start_wl_mint()
