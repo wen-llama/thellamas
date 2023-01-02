@@ -122,7 +122,7 @@ def __init__(preminters: address[max_premint]):
     self.owner = msg.sender
 
     self.contract_uri = "ipfs://bafkreifl76ll3zsay62gx7f6xgyhdydug54pvrv5izbw2usyioi55ndyqm"
-    self.default_uri = "ipfs://bafybeifzuedgu3mdelnd3cna3yxy6u2na5uorzjeqiuhtoufjacxqx6r4i"
+    self.default_uri = "ipfs://bafkreiabbsdyyqhbs36ldcb5pufezudrls43qicpmxhj3ydojxqjnhnbye"
 
     self.al_mint_started = False
     self.wl_mint_started = False
