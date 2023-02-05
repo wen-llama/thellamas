@@ -108,9 +108,8 @@ max_mint_per_tx: constant(uint256) = 3
 cost: constant(uint256) = as_wei_value(0.01, "ether")
 
 al_mint_started: public(bool)
-wl_mint_started: public(bool)
-public_sale_started: public(bool)
 wl_signer: public(address)
+minter: public(address)
 wl_blocklist: HashMap[address, bool]
 al_blocklist: HashMap[address, bool]
 
@@ -125,10 +124,9 @@ def __init__(preminters: address[max_premint]):
     self.default_uri = "ipfs://bafkreiabbsdyyqhbs36ldcb5pufezudrls43qicpmxhj3ydojxqjnhnbye"
 
     self.al_mint_started = False
-    self.wl_mint_started = False
-    self.public_sale_started = False
 
     self.wl_signer = msg.sender
+    self.minter = msg.sender
 
     for i in range(max_premint):
         token_id: uint256 = self.token_count
@@ -420,6 +418,25 @@ def setApprovalForAll(operator: address, approved: bool):
     log ApprovalForAll(msg.sender, operator, approved)
 
 
+@external
+def burn(token_id: uint256):
+    """
+    @notice function to burn a token
+    @param token_id The token to burn
+    """
+
+    assert self._is_approved_or_owner(
+        msg.sender, token_id
+    )  # dev : "ERC721: transfer caller is not owner nor approved"
+
+    owner: address = self.owned_tokens[token_id]
+    self._clear_approval(owner, token_id)
+    self._remove_token_from(owner, token_id)
+    self._add_token_to(empty(address), token_id)
+
+    log Transfer(owner, empty(address), token_id)
+
+
 ### MINT FUNCTIONS ###
 
 @external
@@ -450,54 +467,22 @@ def allowlistMint(mint_amount: uint256, sig: Bytes[65]):
     self.al_blocklist[msg.sender] = True
 
 @external
-@payable
-def whitelistMint(mint_amount: uint256, sig: Bytes[65]):
-    """
-    @notice Function to mint a token for whitelisted users
-    """
-
-    # Checks
-    assert self.wl_mint_started == True, "WL Mint not started yet"
-    assert mint_amount <= max_mint_per_tx, "Transaction exceeds max mint amount"
-    assert self.checkWlSignature(sig, msg.sender) == True, "Signature is not valid"
-    assert self.wl_blocklist[msg.sender] == False, "The whitelisted address was already used"
-    assert msg.value >= cost * mint_amount, "Not enough ether provided"
-
-    for i in range(max_mint_per_tx):
-        if (i >= mint_amount):
-            break
-            
-        token_id: uint256 = self.token_count
-        assert token_id <= max_supply
-        self._add_token_to(msg.sender, token_id)
-        self.token_count += 1
-
-        log Transfer(empty(address), msg.sender, token_id)
-
-    self.wl_blocklist[msg.sender] = True
-
-@external
-@payable
-def mint(mint_amount: uint256):
+def mint() -> uint256:
     """
     @notice Function to mint a token
     """
 
     # Checks
-    assert self.public_sale_started == True, "Public sale not started yet"
-    assert mint_amount <= max_mint_per_tx, "Exceeds max amount per transaction allowed"
-    assert msg.value >= cost * mint_amount, "Not anough ether provided"
+    assert msg.sender == self.minter
+    
+    token_id: uint256 = self.token_count
+    assert token_id <= max_supply
+    self._add_token_to(msg.sender, token_id)
+    self.token_count += 1
 
-    for i in range(max_mint_per_tx):
-        if (i >= mint_amount):
-            break
-            
-        token_id: uint256 = self.token_count
-        assert token_id <= max_supply
-        self._add_token_to(msg.sender, token_id)
-        self.token_count += 1
+    log Transfer(empty(address), msg.sender, token_id)
 
-        log Transfer(empty(address), msg.sender, token_id) 
+    return token_id
 
 
 ### ERC721-URI STORAGE FUNCTIONS ###
@@ -531,6 +516,10 @@ def contractURI() -> String[128]:
 
 ### ADMIN FUNCTIONS
 
+@external
+def set_minter(minter: address):
+    assert msg.sender == self.owner
+    self.minter = minter
 
 @external
 def set_wl_signer(wl_signer: address):
@@ -541,11 +530,6 @@ def set_wl_signer(wl_signer: address):
 @view
 def is_al_blocklisted(_address: address) -> bool:
     return self.al_blocklist[_address]
-
-@external
-@view
-def is_wl_blocklisted(_address: address) -> bool:
-    return self.wl_blocklist[_address]
 
 
 @external
@@ -579,7 +563,7 @@ def set_owner(new_addr: address):
     """
 
     assert msg.sender == self.owner  # dev: Only Owner
-    self.owner = new_addr
+    self.owner = new_addr 
 
 
 @external
@@ -588,7 +572,8 @@ def set_revealed(flag: bool):
     @notice Admin function to reveal collection.  If not revealed, all NFTs show default_uri
     @param flag Boolean, True to reveal, False to conceal
     """
-    assert msg.sender == self.owner
+    assert msg.sender == self.owner # dev: Only Owner
+
     self.revealed = flag
 
 
@@ -613,16 +598,6 @@ def admin_withdraw_erc20(coin: address, target: address, amount: uint256):
 def start_al_mint():
     assert self.owner == msg.sender # dev: "Admin Only"
     self.al_mint_started = True
-
-@external
-def start_wl_mint():
-    assert self.owner == msg.sender # dev: "Admin Only"
-    self.wl_mint_started = True
-
-@external
-def start_public_sale():
-    assert self.owner == msg.sender # dev: "Admin Only"
-    self.public_sale_started = True
 
 
 ## ERC-721 Enumerable Functions
@@ -668,17 +643,6 @@ def tokenOfOwnerByIndex(owner: address, index: uint256) -> uint256:
 
 
 ## Signature helper
-
-@internal
-@view
-def checkWlSignature(sig: Bytes[65], sender: address) -> bool:
-    r: uint256 = convert(slice(sig, 0, 32), uint256)
-    s: uint256 = convert(slice(sig, 32, 32), uint256)
-    v: uint256 = convert(slice(sig, 64, 1), uint256)
-    ethSignedHash: bytes32 = keccak256(concat(b'\x19Ethereum Signed Message:\n32', keccak256(_abi_encode("whitelist:", sender))))
-    signer: address = ecrecover(ethSignedHash, v, r, s)
-
-    return self.wl_signer == ecrecover(ethSignedHash, v, r, s)
 
 @internal
 @view

@@ -35,8 +35,7 @@ def _ensureToken(token, token_id, owner):
 
 
 def _mint(token, minter):
-    token.start_public_sale()
-    token.mint(1, {"from": minter.address, "value": web3.toWei(0.01, 'ether')})
+    token.mint()
 
 
 def _ensureNotToken(token, tokenID):
@@ -97,23 +96,18 @@ def test_balanceOf_nonzero_address(token):
 # Mint a token - this also tests balanceOf and
 # ownerOf
 #
-def test_mint(minted, alice, minted_token_id):
+def test_mint(minted, deployer, minted_token_id):
     # Remember old balance and mint
-    assert minted.balanceOf(alice) == 1
-    assert alice == minted.ownerOf(minted_token_id)
+    assert minted.balanceOf(deployer) == 1
+    assert deployer == minted.ownerOf(minted_token_id)
 
     # Verify that minting has created an event
     txn_receipt = history[-1]
-    _verifyTransferEvent(txn_receipt, ZERO_ADDRESS, alice, minted_token_id)
+    _verifyTransferEvent(txn_receipt, ZERO_ADDRESS, deployer, minted_token_id)
 
-def test_mint_public_sale_not_started(token, alice, deployer):
-    with brownie.reverts("Public sale not started yet"):
-        token.mint(1, {'from': alice, 'value': web3.toWei(0.01, 'ether')})
-
-def test_mint_too_many(token, alice, deployer):
-    token.start_public_sale()
-    with brownie.reverts("Exceeds max amount per transaction allowed"):
-        token.mint(4, {'from': alice, 'value': web3.toWei(0.01, 'ether')}) 
+def test_mint_not_minter(token, alice):
+    with brownie.reverts():
+        token.mint({'from': alice})
 
 def test_allowlist_mint_one(al_minted, alice, minted_token_id):
     assert al_minted.balanceOf(alice) == 1
@@ -173,76 +167,9 @@ def test_allowlist_mint_not_approved_amount(token, alice, deployer):
     alice_signable_message = encode_defunct(alice_hashed)
     signed_message = Account.sign_message(alice_signable_message, deployer.private_key)
     with brownie.reverts("Signature is not valid"):
-        token.allowlistMint(3, signed_message.signature, {'from': alice, 'value': web3.toWei(0.009, 'ether')}) 
+        token.allowlistMint(3, signed_message.signature, {'from': alice, 'value': web3.toWei(0.009, 'ether')})
 
-def test_whitelist_mint_one(wl_minted, alice, minted_token_id):
-    assert wl_minted.balanceOf(alice) == 1
-    assert alice == wl_minted.ownerOf(minted_token_id)
-    txn_receipt = history[-1]
-    _verifyTransferEvent(txn_receipt, ZERO_ADDRESS, alice, minted_token_id)
-
-def test_whitelist_mint_max(token, alice, deployer):
-    token.start_wl_mint()
-    # Sign a message from the wl_signer for alice
-    alice_encoded = encode(["string", "address"], ["whitelist:", alice.address])
-    alice_hashed = web3.keccak(alice_encoded)
-    alice_signable_message = encode_defunct(alice_hashed)
-    signed_message = Account.sign_message(alice_signable_message, deployer.private_key)
-    token.whitelistMint(3, signed_message.signature, {'from': alice, 'value': web3.toWei(0.03, 'ether')})
-
-    assert token.balanceOf(alice) == 3
-    assert alice == token.ownerOf(20)
-    assert alice == token.ownerOf(21)
-    assert alice == token.ownerOf(22)
-
-def test_whitelist_mint_not_started(token, alice, deployer):
-    alice_encoded = encode(["string", "address"], ["whitelist:", alice.address])
-    alice_hashed = web3.keccak(alice_encoded)
-    alice_signable_message = encode_defunct(alice_hashed)
-    signed_message = Account.sign_message(alice_signable_message, deployer.private_key)
-    with brownie.reverts("WL Mint not started yet"):
-        token.whitelistMint(1, signed_message.signature, {'from': alice, 'value': web3.toWei(0.01, 'ether')})
-
-def test_whitelist_mint_address_already_used(token, alice, deployer):
-    token.start_wl_mint()
-    alice_encoded = encode(["string", "address"], ["whitelist:", alice.address])
-    alice_hashed = web3.keccak(alice_encoded)
-    alice_signable_message = encode_defunct(alice_hashed)
-    signed_message = Account.sign_message(alice_signable_message, deployer.private_key)
-    token.whitelistMint(1, signed_message.signature, {'from': alice, 'value': web3.toWei(0.01, 'ether')})
-    with brownie.reverts("The whitelisted address was already used"):
-        token.whitelistMint(1, signed_message.signature, {'from': alice, 'value': web3.toWei(0.01, 'ether')})
-
-def test_whitelist_mint_too_many(token, alice, deployer):
-    token.start_wl_mint()
-    alice_encoded = encode(["string", "address"], ["whitelist:", alice.address])
-    alice_hashed = web3.keccak(alice_encoded)
-    alice_signable_message = encode_defunct(alice_hashed)
-    signed_message = Account.sign_message(alice_signable_message, deployer.private_key)
-    with brownie.reverts("Transaction exceeds max mint amount"):
-        token.whitelistMint(4, signed_message.signature, {'from': alice, 'value': web3.toWei(0.21, 'ether')})    
-
-def test_whitelist_mint_one_not_enough_value(token, alice, deployer):
-    token.start_wl_mint()
-    alice_encoded = encode(["string", "address"], ["whitelist:", alice.address])
-    alice_hashed = web3.keccak(alice_encoded)
-    alice_signable_message = encode_defunct(alice_hashed)
-    signed_message = Account.sign_message(alice_signable_message, deployer.private_key)
-    with brownie.reverts("Not enough ether provided"):
-        token.whitelistMint(1, signed_message.signature, {'from': alice, 'value': web3.toWei(0.009, 'ether')})
-    
-def test_whitelist_mint_three_not_enough_value(token, alice, deployer):
-    token.start_wl_mint()
-    alice_encoded = encode(["string", "address"], ["whitelist:", alice.address])
-    alice_hashed = web3.keccak(alice_encoded)
-    alice_signable_message = encode_defunct(alice_hashed)
-    signed_message = Account.sign_message(alice_signable_message, deployer.private_key)
-    with brownie.reverts("Not enough ether provided"):
-        token.whitelistMint(3, signed_message.signature, {'from': alice, 'value': web3.toWei(0.029, 'ether')})
-
-def test_withdraw(token, alice, deployer):
-    token.start_public_sale()
-    token.mint(1, {'from': alice, 'value': web3.toWei(0.01, 'ether')})
+def test_withdraw(token, deployer, al_minted):
     balanceBefore = deployer.balance()
     token.withdraw({'from': deployer})
     balanceAfter = deployer.balance()
@@ -250,8 +177,7 @@ def test_withdraw(token, alice, deployer):
     assert balanceAfter == balanceBefore + web3.toWei(0.01, 'ether')
 
 def test_withdraw_only_owner(token, alice, deployer):
-    token.start_public_sale()
-    token.mint(1, {'from': alice, 'value': web3.toWei(0.01, 'ether')})
+    token.mint()
 
     with brownie.reverts():
         token.withdraw({'from': alice})
@@ -272,29 +198,21 @@ def test_withdraw_only_owner(token, alice, deployer):
 #
 # Burn a token
 #
-# def test_burn(token):
-#    me = accounts[0];
-#    tokenID = 20;
-#    # Make sure that token does not yet exist
-#    token._burn(tokenID, {"from": me});
-#    # Mint
-#    token._mint(tokenID, {"from": me});
-#    # Now burn it
-#    txn_receipt = token._burn(tokenID, {"from": me});
-#    # Verify that burning has created an event
-#    _verifyTransferEvent(txn_receipt, me, "0x"+40*"0", tokenID);
+def test_burn(token, preminter):
+    tokenID = 1;
+    txn_receipt = token.burn(tokenID, {"from": preminter});
+    # Verify that burning has created an event
+    _verifyTransferEvent(txn_receipt, preminter, "0x"+40*"0", tokenID);
+
 #
-##
-## Only the contract owner can burn
-##
-# def test_burn_notOwner(token):
-#    me = accounts[0];
-#    bob = accounts[1]
-#    tokenID = 20;
-#    _ensureToken(token, tokenID, me);
-#    # Try to burn
-#    with brownie.reverts(): #"Sender not contract owner"):
-#        token._burn(tokenID, {"from": bob});
+# Only the contract owner can burn
+#
+def test_burn_notOwner(token, bob, preminter):
+   tokenID = 1;
+   _ensureToken(token, tokenID, preminter);
+   # Try to burn
+   with brownie.reverts():
+       token.burn(tokenID, {"from": bob});
 
 #
 # Get owner of non-existing token
@@ -309,37 +227,37 @@ def test_owner_of_invalid_token_id(token):
 #
 # Test a valid transfer, initiated by the current owner of the token
 #
-def test_transferFrom(token, alice, bob):
+def test_transferFrom(token, deployer, bob):
     token_id = 20
-    _ensureToken(token, token_id, alice)
+    _ensureToken(token, token_id, deployer)
 
     # Remember balances
-    old_balance_alice = token.balanceOf(alice)
+    old_balance_deployer = token.balanceOf(deployer)
     old_balance_bob = token.balanceOf(bob)
 
     # Now do the transfer
-    txn_receipt = token.transferFrom(alice, bob, token_id, {"from": alice})
+    txn_receipt = token.transferFrom(deployer, bob, token_id, {"from": deployer})
 
     # check owner of NFT
     assert bob == token.ownerOf(token_id)
 
     # Check balances
-    new_balance_alice = token.balanceOf(alice)
+    new_balance_deployer = token.balanceOf(deployer)
     new_balance_bob = token.balanceOf(bob)
 
-    assert new_balance_alice + 1 == old_balance_alice
+    assert new_balance_deployer + 1 == old_balance_deployer
     assert old_balance_bob + 1 == new_balance_bob
 
     # Verify that an Transfer event has been logged
-    _verifyTransferEvent(txn_receipt, alice, bob, token_id)
+    _verifyTransferEvent(txn_receipt, deployer, bob, token_id)
 
 
 #
 # Test an invalid transfer - from is not current owner
 #
-def test_transferFrom_not_owner(token, alice, bob, charlie):
+def test_transferFrom_not_owner(token, deployer, bob, charlie):
     token_id = 20
-    _ensureToken(token, token_id, alice)
+    _ensureToken(token, token_id, deployer)
     with brownie.reverts():  # "ERC721: transfer caller is not owner nor approved"):
         token.transferFrom(charlie, bob, token_id, {"from": charlie})
 
@@ -347,65 +265,65 @@ def test_transferFrom_not_owner(token, alice, bob, charlie):
 #
 # Test an invalid transfer - to is the zero address
 #
-def test_transferFrom_to_zero_zddress(token, alice):
+def test_transferFrom_to_zero_zddress(token, deployer):
     token_id = 20
-    _ensureToken(token, token_id, alice)
+    _ensureToken(token, token_id, deployer)
     with brownie.reverts():  # "ERC721: transfer to the zero address"):
-        token.transferFrom(alice, ZERO_ADDRESS, token_id, {"from": alice})
+        token.transferFrom(deployer, ZERO_ADDRESS, token_id, {"from": deployer})
 
 
 #
 # Test an invalid transfer - invalid token ID
 #
-def test_transfer_from_invalid_token_id(token, alice, bob):
+def test_transfer_from_invalid_token_id(token, deployer, bob):
     token_id = token.totalSupply() + 2
     with brownie.reverts():
-        token.transferFrom(alice, bob, token_id, {"from": alice})
+        token.transferFrom(deployer, bob, token_id, {"from": deployer})
 
 
 #
 # Test an invalid transfer - not authorized
 #
-def test_transfer_from_not_authorized(token, alice, bob, charlie):
+def test_transfer_from_not_authorized(token, deployer, bob, charlie):
     token_id = 20
-    _ensureToken(token, token_id, alice)
+    _ensureToken(token, token_id, deployer)
     with brownie.reverts():  # "ERC721: transfer caller is not owner nor approved"):
-        token.transferFrom(alice, bob, token_id, {"from": charlie})
+        token.transferFrom(deployer, bob, token_id, {"from": charlie})
 
 
 #
 # Test a valid safe transfer, initiated by the current owner of the token
 #
-def test_safe_transfer_from_current_owner(token, alice, bob):
+def test_safe_transfer_from_current_owner(token, deployer, bob):
     token_id = 20
-    _ensureToken(token, token_id, alice)
+    _ensureToken(token, token_id, deployer)
 
     # Remember balances
-    old_balance_alice = token.balanceOf(alice)
+    old_balance_deployer = token.balanceOf(deployer)
     old_balance_bob = token.balanceOf(bob)
 
     # Now do the transfer
     txn_receipt = token.safeTransferFrom(
-        alice, bob, token_id, hexbytes.HexBytes(""), {"from": alice}
+        deployer, bob, token_id, hexbytes.HexBytes(""), {"from": deployer}
     )
 
     # check owner of NFT
     assert bob == token.ownerOf(token_id)
 
     # Check balances
-    assert token.balanceOf(alice) + 1 == old_balance_alice
+    assert token.balanceOf(deployer) + 1 == old_balance_deployer
     assert old_balance_bob + 1 == token.balanceOf(bob)
 
     # Verify that an Transfer event has been logged
-    _verifyTransferEvent(txn_receipt, alice, bob, token_id)
+    _verifyTransferEvent(txn_receipt, deployer, bob, token_id)
 
 
 #
 # Test an invalid safe transfer - from is not current owner
 #
-def test_safe_transfer_from_not_owner(token, alice, bob, charlie):
+def test_safe_transfer_from_not_owner(token, deployer, bob, charlie):
     token_id = 20
-    _ensureToken(token, token_id, alice)
+    _ensureToken(token, token_id, deployer)
     with brownie.reverts():  # "ERC721: transfer caller is not owner nor approved"):
         token.safeTransferFrom(
             charlie, bob, token_id, hexbytes.HexBytes(""), {"from": charlie}
@@ -415,19 +333,19 @@ def test_safe_transfer_from_not_owner(token, alice, bob, charlie):
 #
 # Test an safe invalid transfer - to is the zero address
 #
-def test_safe_transfer_from_to_zero_address(token, alice):
+def test_safe_transfer_from_to_zero_address(token, deployer):
     token_id = 20
-    _ensureToken(token, token_id, alice)
+    _ensureToken(token, token_id, deployer)
     with brownie.reverts():  # "ERC721: transfer to the zero address"):
         token.safeTransferFrom(
-            alice, ZERO_ADDRESS, token_id, hexbytes.HexBytes(""), {"from": alice}
+            deployer, ZERO_ADDRESS, token_id, hexbytes.HexBytes(""), {"from": deployer}
         )
 
 
 #
 # Test an invalid safe transfer - invalid token ID
 #
-def test_safe_transfer_tid_from_to_zero_address(token, alice, bob):
+def test_safe_transfer_tid_from_to_zero_address(token, deployer, bob):
     token_id = 20
 
     # Make sure that token does not exist
@@ -436,49 +354,48 @@ def test_safe_transfer_tid_from_to_zero_address(token, alice, bob):
     # Now do the transfer
     with brownie.reverts():
         token.safeTransferFrom(
-            alice, bob, token_id, hexbytes.HexBytes(""), {"from": alice}
+            deployer, bob, token_id, hexbytes.HexBytes(""), {"from": deployer}
         )
 
 
 #
 # Test an invalid safe transfer - not authorized
 #
-def test_safe_transfer_from_not_authorized(token, alice, bob, charlie):
+def test_safe_transfer_from_not_authorized(token, deployer, bob, charlie):
     token_id = 20
-    _ensureToken(token, token_id, alice)
+    _ensureToken(token, token_id, deployer)
     with brownie.reverts():  # "ERC721: transfer caller is not owner nor approved"):
         token.safeTransferFrom(
-            alice, bob, token_id, hexbytes.HexBytes(""), {"from": bob}
+            deployer, bob, token_id, hexbytes.HexBytes(""), {"from": bob}
         )
 
 
 #
 # Test a valid safe transfer to a contract returning the proper magic value
 #
-def test_safe_transfer_from(token, tokenReceiver):
+def test_safe_transfer_from(token, tokenReceiver, deployer):
     token_receiver = tokenReceiver
     data = "0x1234"
-    me = accounts[0]
     token_id = 20
-    _ensureToken(token, token_id, me)
+    _ensureToken(token, token_id, deployer)
 
     # get current invocation count of test contract
     oldInvocationCount = token_receiver.getInvocationCount()
     # Remember balances
-    oldBalanceMe = token.balanceOf(me)
+    oldBalanceDeployer = token.balanceOf(deployer)
     oldBalanceToken = token.balanceOf(token_receiver.address)
     # Make sure that the contract returns the correct magic value
     token_receiver.setReturnCorrectValue(True)
     # Now do the transfer
     txn_receipt = token.safeTransferFrom(
-        me, token_receiver.address, token_id, hexbytes.HexBytes(data), {"from": me}
+        deployer, token_receiver.address, token_id, hexbytes.HexBytes(data), {"from": deployer}
     )
     # check owner of NFT
     assert token_receiver.address == token.ownerOf(token_id)
     # Check balances
-    newBalanceMe = token.balanceOf(me)
+    newBalanceDeployer = token.balanceOf(deployer)
     newBalanceToken = token.balanceOf(token_receiver.address)
-    assert newBalanceMe + 1 == oldBalanceMe
+    assert newBalanceDeployer + 1 == oldBalanceDeployer
     assert oldBalanceToken + 1 == newBalanceToken
     # get current invocation count of test contract
     newInvocationCount = token_receiver.getInvocationCount()
@@ -486,22 +403,21 @@ def test_safe_transfer_from(token, tokenReceiver):
     # Check that data has been stored
     assert token_receiver.getData() == data
     # Verify that an Transfer event has been logged
-    _verifyTransferEvent(txn_receipt, me, token_receiver.address, token_id)
+    _verifyTransferEvent(txn_receipt, deployer, token_receiver.address, token_id)
 
 
 #
 # Test a valid safe transfer to a contract returning the wrong proper magic value
 #
-def test_safeTransferFrom_wrongMagicValue(token, tokenReceiver):
-    me = accounts[0]
+def test_safeTransferFrom_wrongMagicValue(token, tokenReceiver, deployer):
     tokenID = 20
-    _ensureToken(token, tokenID, me)
+    _ensureToken(token, tokenID, deployer)
     # Make sure that the contract returns the wrong magic value
     tokenReceiver.setReturnCorrectValue(False)
     # Now do the transfer
     with brownie.reverts():  # "Did not return magic value"):
         token.safeTransferFrom(
-            me, tokenReceiver.address, tokenID, hexbytes.HexBytes(""), {"from": me}
+            deployer, tokenReceiver.address, tokenID, hexbytes.HexBytes(""), {"from": deployer}
         )
     # Reset behaviour of test contract
     tokenReceiver.setReturnCorrectValue(True)
@@ -510,75 +426,74 @@ def test_safeTransferFrom_wrongMagicValue(token, tokenReceiver):
 #
 # Test a valid safe transfer to a contract returning the proper magic value - no data
 #
-def test_safeTransferFrom_noData(token, tokenReceiver):
-    me = accounts[0]
+def test_safeTransferFrom_noData(token, tokenReceiver, deployer):
     tokenID = 20
-    _ensureToken(token, tokenID, me)
+    _ensureToken(token, tokenID, deployer)
     # get current invocation count of test contract
     oldInvocationCount = tokenReceiver.getInvocationCount()
     # Remember balances
-    oldBalanceMe = token.balanceOf(me)
+    oldBalanceDeployer = token.balanceOf(deployer)
     oldBalanceToken = token.balanceOf(tokenReceiver.address)
     # Make sure that the contract returns the correct magic value
     tokenReceiver.setReturnCorrectValue(True)
     # Now do the transfer
     txn_receipt = token.safeTransferFrom(
-        me, tokenReceiver.address, tokenID, {"from": me}
+        deployer, tokenReceiver.address, tokenID, {"from": deployer}
     )
     # check owner of NFT
     assert tokenReceiver.address == token.ownerOf(tokenID)
     # Check balances
-    newBalanceMe = token.balanceOf(me)
+    newBalanceDeployer = token.balanceOf(deployer)
     newBalanceToken = token.balanceOf(tokenReceiver.address)
-    assert newBalanceMe + 1 == oldBalanceMe
+    assert newBalanceDeployer + 1 == oldBalanceDeployer
     assert oldBalanceToken + 1 == newBalanceToken
     # get current invocation count of test contract
     newInvocationCount = tokenReceiver.getInvocationCount()
     assert oldInvocationCount + 1 == newInvocationCount
     # Verify that an Transfer event has been logged
-    _verifyTransferEvent(txn_receipt, me, tokenReceiver.address, tokenID)
+    _verifyTransferEvent(txn_receipt, deployer, tokenReceiver.address, tokenID)
 
 
 #
 # Test an approval which is not authorized
 #
-def test_approval_not_authorized(token, alice, bob):
+def test_approval_not_authorized(token, deployer, bob):
     token_id = 20
-    _ensureToken(token, token_id, bob)
+    _ensureToken(token, token_id, deployer)
     with brownie.reverts():  # "ERC721: approve caller is not owner nor approved for all"):
-        token.approve(alice, token_id, {"from": alice})
+        token.approve(deployer, token_id, {"from": deployer})
 
 
 #
 # Test a valid transfer, initiated by an approved sender
 #
-def test_transfer_from_approved(token, alice, bob, charlie):
+def test_transfer_from_approved(token, deployer, bob, charlie):
     token_id = 20
-    _ensureToken(token, token_id, alice)
+    _ensureToken(token, token_id, deployer)
 
     # Approve
-    token.approve(charlie, token_id, {"from": alice})
-    old_balance_alice = token.balanceOf(alice)
+    token.approve(charlie, token_id, {"from": deployer})
+    old_balance_deployer = token.balanceOf(deployer)
     old_balance_bob = token.balanceOf(bob)
 
     # Now do the transfer
-    txn_receipt = token.transferFrom(alice, bob, token_id, {"from": charlie})
+    txn_receipt = token.transferFrom(deployer, bob, token_id, {"from": charlie})
     assert bob == token.ownerOf(token_id)
 
     # Check balances
-    new_balance_alice = token.balanceOf(alice)
+    new_balance_deployer = token.balanceOf(deployer)
     new_balance_bob = token.balanceOf(bob)
-    assert new_balance_alice + 1 == old_balance_alice
+    assert new_balance_deployer + 1 == old_balance_deployer
     assert old_balance_bob + 1 == new_balance_bob
 
     # Verify that an Transfer event has been logged
-    _verifyTransferEvent(txn_receipt, alice, bob, token_id)
+    _verifyTransferEvent(txn_receipt, deployer, bob, token_id)
 
 
 #
 # Test setting and getting approval
 #
-def test_approval(token, alice, bob, charlie):
+def test_approval(token, deployer, bob, charlie):
     token_id = 20
 
     # Make sure that token does not yet exist
@@ -590,36 +505,35 @@ def test_approval(token, alice, bob, charlie):
 
     # Approve - should raise
     with brownie.reverts():  # "ERC721: owner query for nonexistent token"):
-        token.approve(charlie, token_id, {"from": alice})
+        token.approve(charlie, token_id, {"from": deployer})
 
     # Mint
-    _mint(token, alice)
+    _mint(token, deployer)
 
     # Approve for charlie
-    txn_receipt = token.approve(charlie, token_id, {"from": alice})
+    txn_receipt = token.approve(charlie, token_id, {"from": deployer})
 
     # Check
     assert charlie == token.getApproved(token_id)
 
     # Verify events
-    _verifyApprovalEvent(txn_receipt, alice, charlie, token_id)
+    _verifyApprovalEvent(txn_receipt, deployer, charlie, token_id)
 
 
 #
 # Test that approval is reset to zero address if token is transferred
 #
-def test_approval_resetUponTransfer(token):
-    me = accounts[0]
+def test_approval_resetUponTransfer(token, deployer):
     alice = accounts[1]
     bob = accounts[2]
     tokenID = 20
-    _ensureToken(token, tokenID, me)
+    _ensureToken(token, tokenID, deployer)
     # Approve for bob
-    token.approve(bob, tokenID, {"from": me})
+    token.approve(bob, tokenID, {"from": deployer})
     # Check
     assert bob == token.getApproved(tokenID)
     # Do transfer
-    token.transferFrom(me, alice, tokenID, {"from": bob})
+    token.transferFrom(deployer, alice, tokenID, {"from": bob})
     # Check that approval has been reset
     assert ("0x" + 40 * "0") == token.getApproved(tokenID)
 
@@ -667,54 +581,53 @@ def test_only_approval_not_on_my_tokens(token, alice):
 #
 # Test authorization logic for setting and getting approval
 #
-def test_approval_authorization(token, alice, bob, charlie):
+def test_approval_authorization(token, deployer, bob, charlie):
     token_id = 20
-    _ensureToken(token, token_id, alice)
+    _ensureToken(token, token_id, deployer)
     # Try to approve for charlie while not being owner or operator - this should raise an exception
     with brownie.reverts():  # "ERC721: approve caller is not owner nor approved for all"):
         token.approve(charlie, token_id, {"from": bob})
 
     # Now make bob an operator for alice
-    token.setApprovalForAll(bob, True, {"from": alice})
+    token.setApprovalForAll(bob, True, {"from": deployer})
 
     # Approve for charlie again - this should now work
     txn_receipt = token.approve(charlie, token_id, {"from": bob})
 
     # Check
     assert charlie == token.getApproved(token_id)
-    _verifyApprovalEvent(txn_receipt, alice, charlie, token_id)
+    _verifyApprovalEvent(txn_receipt, deployer, charlie, token_id)
 
     # Reset
-    token.setApprovalForAll(bob, False, {"from": alice})
+    token.setApprovalForAll(bob, False, {"from": deployer})
 
 
 #
 # Test a valid transfer, initiated by an operator for the current owner of the token
 #
-def test_transferFrom_operator(token):
-    me = accounts[0]
+def test_transferFrom_operator(token, deployer):
     alice = accounts[1]
     bob = accounts[2]
     tokenID = 20
-    _ensureToken(token, tokenID, me)
+    _ensureToken(token, tokenID, deployer)
     # Now make bob an operator for me
-    token.setApprovalForAll(bob, True, {"from": me})
+    token.setApprovalForAll(bob, True, {"from": deployer})
     # Remember balances
-    oldBalanceMe = token.balanceOf(me)
+    oldBalanceDeployer = token.balanceOf(deployer)
     oldBalanceAlice = token.balanceOf(alice)
     # Now do the transfer
-    txn_receipt = token.transferFrom(me, alice, tokenID, {"from": bob})
+    txn_receipt = token.transferFrom(deployer, alice, tokenID, {"from": bob})
     # Reset
-    token.setApprovalForAll(bob, False, {"from": me})
+    token.setApprovalForAll(bob, False, {"from": deployer})
     # check owner of NFT
     assert alice == token.ownerOf(tokenID)
     # Check balances
-    newBalanceMe = token.balanceOf(me)
+    newBalanceDeployer = token.balanceOf(deployer)
     newBalanceAlice = token.balanceOf(alice)
-    assert newBalanceMe + 1 == oldBalanceMe
+    assert newBalanceDeployer + 1 == oldBalanceDeployer
     assert oldBalanceAlice + 1 == newBalanceAlice
     # Verify that an Transfer event has been logged
-    _verifyTransferEvent(txn_receipt, me, alice, tokenID)
+    _verifyTransferEvent(txn_receipt, deployer, alice, tokenID)
 
 
 #
@@ -742,7 +655,7 @@ def test_name_symbol(token):
 #
 # Test tokenURI
 #
-def test_token_uri(token, alice):
+def test_token_uri(token, deployer):
     token_id = 20
 
     # Make sure that token does not yet exist
@@ -753,7 +666,7 @@ def test_token_uri(token, alice):
         token.tokenURI(token_id)
 
     # Mint
-    _ensureToken(token, token_id, alice)
+    _ensureToken(token, token_id, deployer)
 
     token.set_revealed(True, {"from": token.owner()})
 
@@ -769,7 +682,7 @@ def test_token_uri(token, alice):
 #
 # Test tokenURI - token ID 0
 #
-def test_token_uri_id_zero(token, alice):
+def test_token_uri_id_zero(token, deployer):
     token_id = 20
     # Make sure that token does not yet exist
     _ensureNotToken(token, token_id)
@@ -778,7 +691,7 @@ def test_token_uri_id_zero(token, alice):
         token.tokenURI(token_id)
 
     # Mint
-    _ensureToken(token, token_id, alice)
+    _ensureToken(token, token_id, deployer)
     token.set_revealed(True, {"from": token.owner()})
 
     # Get base URI
