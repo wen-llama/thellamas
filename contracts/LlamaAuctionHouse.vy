@@ -88,16 +88,23 @@ def __init__(
   self.paused = True
 
 @external
+@nonreentrant("lock")
 def settle_current_and_create_new_auction():
+  assert self.paused == False, "Auction house is paused"
+
   self._settle_auction()
   self._create_auction()
 
 @external
+@nonreentrant("lock")
 def settle_auction():
+  assert self.paused == True, "Auction house is not paused"
+
   self._settle_auction()
 
 @external
 @payable
+@nonreentrant("lock")
 def create_bid(llama_id: uint256):
   assert self.auction.llama_id == llama_id, "Llama not up for auction"
   assert block.timestamp < self.auction.end_time, "Auction expired"
@@ -123,6 +130,7 @@ def create_bid(llama_id: uint256):
     log AuctionExtended(self.auction.llama_id, self.auction.end_time)
 
 @external
+@nonreentrant("lock")
 def withdraw():
   pending_amount: uint256 = self.pending_returns[msg.sender]
   self.pending_returns[msg.sender] = 0

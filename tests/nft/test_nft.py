@@ -205,7 +205,7 @@ def test_burn(token, preminter):
     _verifyTransferEvent(txn_receipt, preminter, "0x"+40*"0", tokenID);
 
 #
-# Only the contract owner can burn
+# Only the owner can burn
 #
 def test_burn_notOwner(token, bob, preminter):
    tokenID = 1;

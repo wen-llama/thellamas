@@ -1,5 +1,5 @@
 import brownie
-from brownie import chain
+from brownie import chain, ZERO_ADDRESS
 import pytest
 
 # Initialization vars
@@ -155,10 +155,102 @@ def test_withdraw_zero_pending(auction_house, alice):
   balance_after = alice.balance()
   assert balance_before == balance_after
 
-def test_settle_auction(token, auction_house):
+def test_settle_auction_no_bid(token, auction_house):
   token.set_minter(auction_house)
   auction_house.unpause()
   assert auction_house.auction()["settled"] == False
   chain.sleep(1000)
+  auction_house.pause()
   auction_house.settle_auction()
-  auction_house.auction()["settled"] == True
+  assert auction_house.auction()["settled"] == True
+
+def test_settle_current_and_create_new_auction_no_bid(token, auction_house):
+  token.set_minter(auction_house)
+  auction_house.unpause()
+  assert auction_house.auction()["settled" ] == False
+  old_auction_id = auction_house.auction()["llama_id"]
+  chain.sleep(1000)
+  auction_house.settle_current_and_create_new_auction()
+  new_auction_id = auction_house.auction()["llama_id"]
+  assert auction_house.auction()["settled"] == False
+  assert old_auction_id < new_auction_id
+
+def test_settle_auction_with_bid(token, deployer, auction_house, alice):
+  token.set_minter(auction_house)
+  auction_house.unpause()
+  assert auction_house.auction()["settled"] == False
+  auction_house.create_bid(20, {"from": alice, "value": "100 wei"})
+  chain.sleep(1000)
+  auction_house.pause()
+  deployer_balance_before = deployer.balance()
+  auction_house.settle_auction()
+  deployer_balance_after = deployer.balance()
+  assert auction_house.auction()["settled"] == True
+  assert token.ownerOf(20) == alice
+  assert deployer_balance_after == deployer_balance_before + 100
+
+def test_settle_current_and_create_new_auction_with_bid(token, deployer, auction_house, alice):
+  token.set_minter(auction_house)
+  auction_house.unpause()
+  assert auction_house.auction()["settled" ] == False
+  old_auction_id = auction_house.auction()["llama_id"]
+  auction_house.create_bid(20, {"from": alice, "value": "100 wei"})
+  chain.sleep(1000)
+  deployer_balance_before = deployer.balance()
+  auction_house.settle_current_and_create_new_auction()
+  deployer_balance_after = deployer.balance()
+  new_auction_id = auction_house.auction()["llama_id"]
+  assert auction_house.auction()["settled"] == False
+  assert old_auction_id < new_auction_id
+  assert deployer_balance_after == deployer_balance_before + 100
+
+def test_settle_auction_multiple_bids(token, deployer, auction_house, alice, bob):
+  token.set_minter(auction_house)
+  auction_house.unpause()
+  assert auction_house.auction()["settled"] == False
+  alice_balance_start = alice.balance()
+  auction_house.create_bid(20, {"from": alice, "value": "100 wei"})
+  auction_house.create_bid(20, {"from": bob, "value": "1000 wei"})
+  chain.sleep(1000)
+  auction_house.pause()
+  deployer_balance_before = deployer.balance()
+  auction_house.settle_auction()
+  deployer_balance_after = deployer.balance()
+  alice_balance_before_withdraw = alice.balance()
+  assert alice_balance_before_withdraw == alice_balance_start - 100
+  auction_house.withdraw({"from": alice})
+  alice_balance_after_withdraw = alice.balance()
+  assert alice_balance_after_withdraw == alice_balance_start
+  assert auction_house.auction()["settled"] == True
+  assert token.ownerOf(20) == bob
+  assert deployer_balance_after == deployer_balance_before + 1000
+
+def test_bidder_outbids_prev_bidder(token, auction_house, deployer, alice, bob):
+  token.set_minter(auction_house)
+  auction_house.unpause()
+  assert auction_house.auction()["settled"] == False
+  alice_balance_start = alice.balance()
+  bob_balance_start = bob.balance()
+  auction_house.create_bid(20, {"from": alice, "value": "100 wei"})
+  auction_house.create_bid(20, {"from": bob, "value": "1000 wei"})
+  auction_house.create_bid(20, {"from": alice, "value": "2000 wei"})
+  chain.sleep(1000)
+  deployer_balance_before = deployer.balance()
+  auction_house.settle_current_and_create_new_auction()
+  deployer_balance_after = deployer.balance()
+  alice_balance_before_withdraw = alice.balance()
+  bob_balance_before_withdraw = bob.balance()
+  assert alice_balance_before_withdraw == alice_balance_start - 2100
+  assert bob_balance_before_withdraw == bob_balance_start - 1000
+  auction_house.withdraw({"from": alice})
+  auction_house.withdraw({"from": bob})
+  alice_balance_after_withdraw = alice.balance()
+  bob_balance_after_withdraw = bob.balance()
+  assert alice_balance_after_withdraw == alice_balance_start - 2000
+  assert bob_balance_after_withdraw == bob_balance_start
+  assert auction_house.auction()["settled"] == False
+  assert token.ownerOf(20) == alice
+  assert deployer_balance_after == deployer_balance_before + 2000
+
+
+  # TODO: Write some more tests dealing with auction expiration
