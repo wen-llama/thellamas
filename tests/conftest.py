@@ -58,9 +58,8 @@ def preminter():
 
 
 @pytest.fixture(scope="function")
-def minted(token, alice):
-    token.start_public_sale()
-    token.mint(1, {'from': alice, 'value': web3.toWei(0.01, 'ether')})
+def minted(token):
+    token.mint()
     return token
 
 @pytest.fixture(scope="function")
@@ -112,3 +111,12 @@ def token_metadata():
 @pytest.fixture(scope="function")
 def tokenReceiver(deployer):
     return ERC721TokenReceiverImplementation.deploy({"from": deployer})
+
+@pytest.fixture(scope="function")
+def weth(Weth):
+    ERC721.deploy({"from": deployer})
+
+@pytest.fixture(scope="function")
+def auction_house(LlamaAuctionHouse, token, deployer, charlie):
+    auction_house = LlamaAuctionHouse.deploy(token, 100, 100, 100, 100, {"from": deployer})
+    return auction_house
