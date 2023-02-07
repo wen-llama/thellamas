@@ -108,24 +108,19 @@ max_mint_per_tx: constant(uint256) = 3
 cost: constant(uint256) = as_wei_value(0.01, "ether")
 
 al_mint_started: public(bool)
-wl_signer: public(address)
+al_signer: public(address)
 minter: public(address)
-wl_blocklist: HashMap[address, bool]
 al_blocklist: HashMap[address, bool]
 
 @external
 def __init__(preminters: address[max_premint]):
     self.symbol = "LLAMA"
     self.name = "The Llamas"
-
     self.owner = msg.sender
-
     self.contract_uri = "ipfs://bafkreifl76ll3zsay62gx7f6xgyhdydug54pvrv5izbw2usyioi55ndyqm"
     self.default_uri = "ipfs://bafkreiabbsdyyqhbs36ldcb5pufezudrls43qicpmxhj3ydojxqjnhnbye"
-
     self.al_mint_started = False
-
-    self.wl_signer = msg.sender
+    self.al_signer = msg.sender
     self.minter = msg.sender
 
     for i in range(max_premint):
@@ -522,9 +517,9 @@ def set_minter(minter: address):
     self.minter = minter
 
 @external
-def set_wl_signer(wl_signer: address):
+def set_al_signer(al_signer: address):
     assert msg.sender == self.owner
-    self.wl_signer = wl_signer
+    self.al_signer = al_signer
 
 @external
 @view
@@ -607,9 +602,8 @@ def start_al_mint():
 @view
 def totalSupply() -> uint256:
     """
-    @notice Enumerate valid NFTs
-    @dev Throws if `_index` >= `totalSupply()`.
-    @return The token identifier for the `_index`th NFT
+    @notice Return the total supply
+    @return The token count
     """
     return self.token_count
 
@@ -653,4 +647,4 @@ def checkAlSignature(sig: Bytes[65], sender: address, mint_amount: uint256) -> b
     ethSignedHash: bytes32 = keccak256(concat(b'\x19Ethereum Signed Message:\n32', keccak256(_abi_encode("allowlist:", sender, mint_amount))))
     signer: address = ecrecover(ethSignedHash, v, r, s)
 
-    return self.wl_signer == ecrecover(ethSignedHash, v, r, s)
+    return self.al_signer == ecrecover(ethSignedHash, v, r, s)

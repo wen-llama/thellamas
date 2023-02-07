@@ -10,9 +10,6 @@ def test_owner(auction_house, deployer):
 def test_llamas(auction_house, token):
   assert auction_house.llamas() == token
 
-def test_weth_address(auction_house, charlie):
-  assert auction_house.weth() == charlie
-
 def test_time_buffer(auction_house):
   assert auction_house.time_buffer() == 100
 
@@ -71,6 +68,8 @@ def test_set_min_bid_increment_percentage(auction_house):
 def test_set_min_bid_increment_percentage_not_owner(auction_house, alice):
   with brownie.reverts():
     auction_house.set_min_bid_increment_percentage(200, {"from": alice})
+
+# Bidding
 
 def test_create_bid(token, auction_house, alice):
   token.set_minter(auction_house)

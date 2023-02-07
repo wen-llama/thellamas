@@ -118,5 +118,5 @@ def weth(Weth):
 
 @pytest.fixture(scope="function")
 def auction_house(LlamaAuctionHouse, token, deployer, charlie):
-    auction_house = LlamaAuctionHouse.deploy(token, charlie, 100, 100, 100, 100, {"from": deployer})
+    auction_house = LlamaAuctionHouse.deploy(token, 100, 100, 100, 100, {"from": deployer})
     return auction_house

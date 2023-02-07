@@ -54,7 +54,6 @@ event AuctionSettled:
 
 # Auction
 llamas: public(Llama)
-weth: public(address)
 time_buffer: public(uint256)
 reserve_price: public(uint256)
 min_bid_increment_percentage: public(uint256)
@@ -71,7 +70,6 @@ paused: public(bool)
 @external
 def __init__(
   _llamas: Llama,
-  _weth: address,
   _time_buffer: uint256,
   _reserve_price: uint256,
   _min_bid_increment_percentage: uint256,
@@ -79,7 +77,6 @@ def __init__(
 ):
 
   self.llamas = _llamas
-  self.weth = _weth
   self.time_buffer = _time_buffer
   self.reserve_price = _reserve_price
   self.min_bid_increment_percentage = _min_bid_increment_percentage
