@@ -1,5 +1,5 @@
 import brownie
-from brownie import chain, ZERO_ADDRESS
+from brownie import chain, web3, ZERO_ADDRESS
 import pytest
 
 # Initialization vars
@@ -251,5 +251,20 @@ def test_bidder_outbids_prev_bidder(token, auction_house, deployer, alice, bob):
   assert token.ownerOf(20) == alice
   assert deployer_balance_after == deployer_balance_before + 2000
 
+def test_create_bid_auction_extended(token, auction_house, alice, bob):
+  token.set_minter(auction_house)
+  auction_house.unpause()
+  auction_house.create_bid(20, {"from": alice, "value": "100 wei"})
+  starting_block_timestamp = chain.time()
+  chain.sleep(99)
+  auction_house.create_bid(20, {"from": bob, "value": "1000 wei"})
+  assert auction_house.auction()["end_time"] == starting_block_timestamp + 199
+  assert auction_house.auction()["settled"] == False
 
-  # TODO: Write some more tests dealing with auction expiration
+def test_create_bid_auction_not_extended(token, auction_house, alice, bob):
+  token.set_minter(auction_house)
+  auction_house.unpause()
+  auction_house.create_bid(20, {"from": alice, "value": "100 wei"})
+  chain.sleep(101)
+  with brownie.reverts("Auction expired"):
+    auction_house.create_bid(20, {"from": bob, "value": "1000 wei"})
