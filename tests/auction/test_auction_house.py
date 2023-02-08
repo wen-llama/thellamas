@@ -32,6 +32,7 @@ def test_pause_unpause(auction_house, token, deployer, minted_token_id):
   auction_house.unpause()
   assert auction_house.paused() == False
   assert auction_house.auction()["llama_id"] == minted_token_id
+  assert auction_house.auction()["settled"] == False
   auction_house.pause()
   assert auction_house.paused() == True
 
@@ -163,6 +164,12 @@ def test_settle_auction_no_bid(token, auction_house):
   auction_house.settle_auction()
   assert auction_house.auction()["settled"] == True
 
+def test_settle_auction_when_not_paused(auction_house, token):
+  token.set_minter(auction_house)
+  auction_house.unpause()
+  with brownie.reverts("Auction house is not paused"):
+    auction_house.settle_auction()
+
 def test_settle_current_and_create_new_auction_no_bid(token, auction_house):
   token.set_minter(auction_house)
   auction_house.unpause()
@@ -202,6 +209,11 @@ def test_settle_current_and_create_new_auction_with_bid(token, deployer, auction
   assert auction_house.auction()["settled"] == False
   assert old_auction_id < new_auction_id
   assert deployer_balance_after == deployer_balance_before + 100
+
+def test_settle_current_and_create_new_auction_when_paused(token, auction_house):
+  token.set_minter(auction_house)
+  with brownie.reverts("Auction house is paused"):
+    auction_house.settle_current_and_create_new_auction()
 
 def test_settle_auction_multiple_bids(token, deployer, auction_house, alice, bob):
   token.set_minter(auction_house)
