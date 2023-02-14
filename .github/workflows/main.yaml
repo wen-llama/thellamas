@@ -3,9 +3,9 @@ on: ["push", "pull_request"]
 name: main workflow
 
 env:
-  # ETHERSCAN_TOKEN:
+  WEB3_INFURA_PROJECT_ID: ${{ secrets.WEB3_INFURA_PROJECT_ID }}
+  ETHERSCAN_TOKEN: ${{ secrets.ETHERSCAN_TOKEN }}
   GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-  # WEB3_INFURA_PROJECT_ID:
 
   # increasing available memory for node reduces issues with ganache crashing
   # https://nodejs.org/api/cli.html#cli_max_old_space_size_size_in_megabytes
@@ -31,7 +31,7 @@ jobs:
       uses: actions/setup-node@v1
 
     - name: Install Ganache
-      run: npm install -g ganache-cli@6.10.2
+      run: npm install -g ganache-cli@6.12.2
 
     - name: Setup Python 3.8
       uses: actions/setup-python@v2
@@ -39,7 +39,11 @@ jobs:
         python-version: 3.8
 
     - name: Install Requirements
-      run: pip install -r requirements.txt
+      run: pip install -r requirements_complete.txt
 
     - name: Run Tests
-      run: brownie test
+      run: |
+        touch .env
+        echo "WEB3_INFURA_PROJECT_ID=${{ env.WEB3_INFURA_PROJECT_ID }}" >> .env
+        echo "ETHERSCAN_TOKEN=${{ env.ETHERSCAN_TOKEN }}" >> .env
+        brownie test
