@@ -23,6 +23,16 @@ def test_tokenOfOwnerByIndex_accurate(minted, deployer, minted_token_id, bob):
     minted.transferFrom(deployer, bob, minted_token_id + 1, {"from": deployer})
     assert minted.ownerOf(minted_token_id + 1) == bob
     assert minted.ownerOf(minted_token_id + 2) == deployer
-    # whoops!  deployer still showing as owning transferred NFT
-    # assert minted.tokenOfOwnerByIndex(deployer, 0) == minted_token_id + 1  # passes, should fail
-    assert minted.tokenOfOwnerByIndex(deployer, 0) == minted_token_id + 2  # should pass
+    assert minted.tokenOfOwnerByIndex(deployer, 0) == minted_token_id + 2
+
+    minted.mint()
+    minted.mint()
+    assert minted.tokenOfOwnerByIndex(deployer, 0) == minted_token_id + 2
+    assert minted.tokenOfOwnerByIndex(deployer, 1) == minted_token_id + 3
+    assert minted.tokenOfOwnerByIndex(deployer, 2) == minted_token_id + 4
+
+    minted.transferFrom(deployer, bob, minted_token_id + 3, {"from": deployer})
+    assert minted.tokenOfOwnerByIndex(deployer, 0) == minted_token_id + 2
+    assert minted.tokenOfOwnerByIndex(deployer, 1) == minted_token_id + 4
+    with brownie.reverts():
+        assert minted.tokenOfOwnerByIndex(deployer, 2)
