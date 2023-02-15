@@ -82,6 +82,7 @@ contract_uri: String[128]
 
 # NFT Data
 token_by_owner: HashMap[address, HashMap[uint256, uint256]]
+ids_by_owner: HashMap[address, DynArray[uint256, max_supply]]
 token_count: uint256
 
 owned_tokens: HashMap[uint256, address]                       # @dev NFT ID to the address that owns it
@@ -245,7 +246,10 @@ def _add_token_to(_to: address, _token_id: uint256):
     self.owned_tokens[_token_id] = _to
 
     # Change count tracking
-    self.token_by_owner[_to][self.balances[_to]] = _token_id
+    # self.token_by_owner[_to][self.balances[_to]] = _token_id
+    num_ids: uint256 = self.balances[_to]
+    self.token_by_owner[_to][_token_id] = num_ids
+    self.ids_by_owner[_to].append(_token_id)
     self.balances[_to] += 1
 
 
@@ -262,6 +266,18 @@ def _remove_token_from(_from: address, _token_id: uint256):
     # Change the owner
     self.owned_tokens[_token_id] = empty(address)
 
+    # update ids list for user
+    end_index: uint256 = self.balances[_from] - 1
+    id_index:uint256 = self.token_by_owner[_from][_token_id]
+    # replace with one from end and then..
+    end_id: uint256 = self.ids_by_owner[_from][end_index]
+    self.ids_by_owner[_from][id_index] = end_id
+    # ... pop!
+    self.ids_by_owner[_from].pop()
+    self.token_by_owner[_from][_token_id] = 0
+    if end_id != _token_id:
+        self.token_by_owner[_from][end_id] = id_index
+    
     # Change count tracking
     self.balances[_from] -= 1
 
@@ -633,7 +649,7 @@ def tokenOfOwnerByIndex(owner: address, index: uint256) -> uint256:
     """
     assert owner != empty(address)
     assert index < self.balances[owner]
-    return self.token_by_owner[owner][index]
+    return self.ids_by_owner[owner][index]
 
 
 ## Signature helper
