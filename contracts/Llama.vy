@@ -81,8 +81,8 @@ base_uri: public(String[128])
 contract_uri: String[128]
 
 # NFT Data
-token_by_owner: HashMap[address, HashMap[uint256, uint256]]
 ids_by_owner: HashMap[address, DynArray[uint256, max_supply]]
+id_to_index: HashMap[uint256, uint256]
 token_count: uint256
 
 owned_tokens: HashMap[uint256, address]                       # @dev NFT ID to the address that owns it
@@ -246,7 +246,7 @@ def _add_token_to(_to: address, _token_id: uint256):
 
     # Change count tracking
     num_ids: uint256 = len(self.ids_by_owner[_to])
-    self.token_by_owner[_to][_token_id] = num_ids
+    self.id_to_index[_token_id] = num_ids
     self.ids_by_owner[_to].append(_token_id)
 
 
@@ -265,15 +265,15 @@ def _remove_token_from(_from: address, _token_id: uint256):
 
     # update ids list for user
     end_index: uint256 = len(self.ids_by_owner[_from]) - 1
-    id_index: uint256 = self.token_by_owner[_from][_token_id]
+    id_index: uint256 = self.id_to_index[_token_id]
     # replace with one from end and then..
     end_id: uint256 = self.ids_by_owner[_from][end_index]
     self.ids_by_owner[_from][id_index] = end_id
     # ... pop!
     self.ids_by_owner[_from].pop()
-    self.token_by_owner[_from][_token_id] = 0
+    self.id_to_index[_token_id] = 0
     if end_id != _token_id:
-        self.token_by_owner[_from][end_id] = id_index
+        self.id_to_index[end_id] = id_index
 
 
 @internal
