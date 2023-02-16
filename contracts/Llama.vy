@@ -651,6 +651,12 @@ def tokenOfOwnerByIndex(owner: address, index: uint256) -> uint256:
     return self.ids_by_owner[owner][index]
 
 
+@external
+@view
+def tokensForOwner(owner: address) -> DynArray[uint256, max_supply]:
+    return self.ids_by_owner[owner]
+
+
 ## Signature helper
 
 @internal

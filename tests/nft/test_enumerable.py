@@ -36,3 +36,13 @@ def test_tokenOfOwnerByIndex_accurate(minted, deployer, minted_token_id, bob):
     assert minted.tokenOfOwnerByIndex(deployer, 1) == minted_token_id + 4
     with brownie.reverts():
         assert minted.tokenOfOwnerByIndex(deployer, 2)
+
+
+def test_tokensForOwner(minted, deployer, minted_token_id, bob):
+    assert minted.tokensForOwner(deployer) == [minted_token_id]
+    minted.mint()
+    assert minted.tokensForOwner(deployer) == [minted_token_id, minted_token_id + 1]
+
+    minted.transferFrom(deployer, bob, minted_token_id, {"from": deployer})
+    assert minted.tokensForOwner(deployer) == [minted_token_id + 1]
+    assert minted.tokensForOwner(bob) == [minted_token_id]
