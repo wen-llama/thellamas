@@ -645,6 +645,5 @@ def checkAlSignature(sig: Bytes[65], sender: address, mint_amount: uint256) -> b
     s: uint256 = convert(slice(sig, 32, 32), uint256)
     v: uint256 = convert(slice(sig, 64, 1), uint256)
     ethSignedHash: bytes32 = keccak256(concat(b'\x19Ethereum Signed Message:\n32', keccak256(_abi_encode("allowlist:", sender, mint_amount))))
-    signer: address = ecrecover(ethSignedHash, v, r, s)
 
     return self.al_signer == ecrecover(ethSignedHash, v, r, s)
