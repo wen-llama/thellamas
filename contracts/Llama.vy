@@ -265,7 +265,7 @@ def _remove_token_from(_from: address, _token_id: uint256):
 
     # update ids list for user
     end_index: uint256 = len(self.ids_by_owner[_from]) - 1
-    id_index:uint256 = self.token_by_owner[_from][_token_id]
+    id_index: uint256 = self.token_by_owner[_from][_token_id]
     # replace with one from end and then..
     end_id: uint256 = self.ids_by_owner[_from][end_index]
     self.ids_by_owner[_from][id_index] = end_id
