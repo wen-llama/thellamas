@@ -88,7 +88,6 @@ token_count: uint256
 owned_tokens: HashMap[uint256, address]                       # @dev NFT ID to the address that owns it
 token_approvals: HashMap[uint256, address]                    # @dev NFT ID to approved address
 operator_approvals: HashMap[address, HashMap[address, bool]]  # @dev Owner address to mapping of operator addresses
-balances: HashMap[address, uint256]                           # @dev Owner address to token count
 
 # @dev Static list of supported ERC165 interface ids
 SUPPORTED_INTERFACES: constant(bytes4[5]) = [
@@ -160,7 +159,7 @@ def balanceOf(owner: address) -> uint256:
     """
 
     assert owner != empty(address)  # dev: "ERC721: balance query for the zero address"
-    return self.balances[owner]
+    return len(self.ids_by_owner[owner])
 
 
 @view
@@ -246,11 +245,9 @@ def _add_token_to(_to: address, _token_id: uint256):
     self.owned_tokens[_token_id] = _to
 
     # Change count tracking
-    # self.token_by_owner[_to][self.balances[_to]] = _token_id
-    num_ids: uint256 = self.balances[_to]
+    num_ids: uint256 = len(self.ids_by_owner[_to])
     self.token_by_owner[_to][_token_id] = num_ids
     self.ids_by_owner[_to].append(_token_id)
-    self.balances[_to] += 1
 
 
 @internal
@@ -267,7 +264,7 @@ def _remove_token_from(_from: address, _token_id: uint256):
     self.owned_tokens[_token_id] = empty(address)
 
     # update ids list for user
-    end_index: uint256 = self.balances[_from] - 1
+    end_index: uint256 = len(self.ids_by_owner[_from]) - 1
     id_index:uint256 = self.token_by_owner[_from][_token_id]
     # replace with one from end and then..
     end_id: uint256 = self.ids_by_owner[_from][end_index]
@@ -277,9 +274,6 @@ def _remove_token_from(_from: address, _token_id: uint256):
     self.token_by_owner[_from][_token_id] = 0
     if end_id != _token_id:
         self.token_by_owner[_from][end_id] = id_index
-    
-    # Change count tracking
-    self.balances[_from] -= 1
 
 
 @internal
@@ -648,7 +642,7 @@ def tokenOfOwnerByIndex(owner: address, index: uint256) -> uint256:
     @return The token identifier for the `index`th NFT assigned to `owner`, (sort order not specified)
     """
     assert owner != empty(address)
-    assert index < self.balances[owner]
+    assert index < len(self.ids_by_owner[owner])
     return self.ids_by_owner[owner][index]
 
 
