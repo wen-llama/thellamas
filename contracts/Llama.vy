@@ -263,15 +263,15 @@ def _remove_token_from(_from: address, _token_id: uint256):
     # Change the owner
     self.owned_tokens[_token_id] = empty(address)
 
-    # update ids list for user
+    # Update ids list for user
     end_index: uint256 = len(self.ids_by_owner[_from]) - 1
     id_index: uint256 = self.id_to_index[_token_id]
     if end_index == id_index:
-        # remove is simple since token is at end of ids list
+        # Remove is simple since token is at end of ids list
         self.ids_by_owner[_from].pop()
         self.id_to_index[_token_id] = 0
     else:
-        # token is not at end;
+        # Token is not at end;
         # replace it with the end token and then..
         end_id: uint256 = self.ids_by_owner[_from][end_index]
         self.ids_by_owner[_from][id_index] = end_id
