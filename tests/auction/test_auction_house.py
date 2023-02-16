@@ -440,9 +440,9 @@ def test_create_bid_auction_extended(token, auction_house, alice, bob):
   auction_house.disable_wl()
   auction_house.create_bid(20, {"from": alice, "value": "100 wei"})
   starting_block_timestamp = chain.time()
-  chain.sleep(99)
+  chain.sleep(90)
   auction_house.create_bid(20, {"from": bob, "value": "1000 wei"})
-  assert auction_house.auction()["end_time"] == starting_block_timestamp + 199
+  assert auction_house.auction()["end_time"] == starting_block_timestamp + 190
   assert auction_house.auction()["settled"] == False
 
 def test_create_bid_auction_not_extended(token, auction_house, alice, bob):

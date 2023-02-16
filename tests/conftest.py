@@ -117,6 +117,6 @@ def weth(Weth):
     ERC721.deploy({"from": deployer})
 
 @pytest.fixture(scope="function")
-def auction_house(LlamaAuctionHouse, token, deployer, charlie):
+def auction_house(LlamaAuctionHouse, token, deployer):
     auction_house = LlamaAuctionHouse.deploy(token, 100, 100, 100, 100, {"from": deployer})
     return auction_house
