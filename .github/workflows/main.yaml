@@ -44,6 +44,20 @@ jobs:
     - name: Install Requirements
       run: pip install -r requirements_complete.txt
 
+    - name: Format Python
+      run: |
+        black --version
+        black . --check
+
+    - name: Format Vyper
+      run: |
+        python3 -c "import mamushi; print(mamushi.__version__)"
+        mamushi . --check
+
+    - name: Lint Python
+      run: |
+        flake8 .
+
     - name: Run Tests
       run: |
         touch .env
