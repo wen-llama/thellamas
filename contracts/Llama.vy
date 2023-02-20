@@ -81,13 +81,13 @@ base_uri: public(String[128])
 contract_uri: String[128]
 
 # NFT Data
-token_by_owner: HashMap[address, HashMap[uint256, uint256]]
+ids_by_owner: HashMap[address, DynArray[uint256, max_supply]]
+id_to_index: HashMap[uint256, uint256]
 token_count: uint256
 
 owned_tokens: HashMap[uint256, address]                       # @dev NFT ID to the address that owns it
 token_approvals: HashMap[uint256, address]                    # @dev NFT ID to approved address
 operator_approvals: HashMap[address, HashMap[address, bool]]  # @dev Owner address to mapping of operator addresses
-balances: HashMap[address, uint256]                           # @dev Owner address to token count
 
 # @dev Static list of supported ERC165 interface ids
 SUPPORTED_INTERFACES: constant(bytes4[5]) = [
@@ -159,7 +159,7 @@ def balanceOf(owner: address) -> uint256:
     """
 
     assert owner != empty(address)  # dev: "ERC721: balance query for the zero address"
-    return self.balances[owner]
+    return len(self.ids_by_owner[owner])
 
 
 @view
@@ -245,8 +245,9 @@ def _add_token_to(_to: address, _token_id: uint256):
     self.owned_tokens[_token_id] = _to
 
     # Change count tracking
-    self.token_by_owner[_to][self.balances[_to]] = _token_id
-    self.balances[_to] += 1
+    num_ids: uint256 = len(self.ids_by_owner[_to])
+    self.id_to_index[_token_id] = num_ids
+    self.ids_by_owner[_to].append(_token_id)
 
 
 @internal
@@ -262,8 +263,22 @@ def _remove_token_from(_from: address, _token_id: uint256):
     # Change the owner
     self.owned_tokens[_token_id] = empty(address)
 
-    # Change count tracking
-    self.balances[_from] -= 1
+    # Update ids list for user
+    end_index: uint256 = len(self.ids_by_owner[_from]) - 1
+    id_index: uint256 = self.id_to_index[_token_id]
+    if end_index == id_index:
+        # Remove is simple since token is at end of ids list
+        self.ids_by_owner[_from].pop()
+        self.id_to_index[_token_id] = 0
+    else:
+        # Token is not at end;
+        # replace it with the end token and then..
+        end_id: uint256 = self.ids_by_owner[_from][end_index]
+        self.ids_by_owner[_from][id_index] = end_id
+        # ... pop!
+        self.ids_by_owner[_from].pop()
+        self.id_to_index[_token_id] = 0
+        self.id_to_index[end_id] = id_index
 
 
 @internal
@@ -632,8 +647,14 @@ def tokenOfOwnerByIndex(owner: address, index: uint256) -> uint256:
     @return The token identifier for the `index`th NFT assigned to `owner`, (sort order not specified)
     """
     assert owner != empty(address)
-    assert index < self.balances[owner]
-    return self.token_by_owner[owner][index]
+    assert index < len(self.ids_by_owner[owner])
+    return self.ids_by_owner[owner][index]
+
+
+@external
+@view
+def tokensForOwner(owner: address) -> DynArray[uint256, max_supply]:
+    return self.ids_by_owner[owner]
 
 
 ## Signature helper
