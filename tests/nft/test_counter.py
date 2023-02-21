@@ -1,19 +1,10 @@
 import brownie
-import pytest
-from brownie import ZERO_ADDRESS, accounts, exceptions
+from brownie import ZERO_ADDRESS
 
 
-#
-# Inquire initial count
-#
 def test_initialCount(token, premint):
     count = token.totalSupply()
     assert premint == count
-
-
-#
-# Test increment
-#
 
 
 def test_increment(minted, premint):

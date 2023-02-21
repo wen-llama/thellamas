@@ -1,11 +1,6 @@
 import brownie
-import pytest
-from brownie import ZERO_ADDRESS, accounts, exceptions
+from brownie import ZERO_ADDRESS
 
-#
-# These tests are meant to be executed with brownie. To run them:
-# brownie test
-#
 
 # Test the name method
 def test_name(token, token_metadata):
@@ -54,10 +49,6 @@ def test_transfer_nonowner(minted, alice, bob, token):
 
 # Test a transfer with no balance
 def test_transfer_nobalance(token, alice, bob):
-
-    old_balance_alice = token.balanceOf(alice)
-    old_balance_bob = token.balanceOf(bob)
-
     with brownie.reverts():
         token.transferFrom(alice, bob, 1, {"from": bob})
 

@@ -1,11 +1,10 @@
 #!/usr/bin/python3
 
 import pytest
-from brownie import Llama, ERC721TokenReceiverImplementation, accounts, web3
-
-from eth_account.messages import encode_defunct
-from eth_account import Account
+from brownie import ERC721TokenReceiverImplementation, accounts, web3
 from eth_abi import encode
+from eth_account import Account
+from eth_account.messages import encode_defunct
 
 
 @pytest.fixture(scope="function", autouse=True)
@@ -99,11 +98,6 @@ def token_metadata():
 @pytest.fixture(scope="function")
 def tokenReceiver(deployer):
     return ERC721TokenReceiverImplementation.deploy({"from": deployer})
-
-
-@pytest.fixture(scope="function")
-def weth(Weth):
-    ERC721.deploy({"from": deployer})
 
 
 @pytest.fixture(scope="function")
