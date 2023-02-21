@@ -15,6 +15,7 @@ def test_initialCount(token, premint):
 # Test increment
 #
 
+
 def test_increment(minted, premint):
     assert minted.totalSupply() == 1 + premint
 
