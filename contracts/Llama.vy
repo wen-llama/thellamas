@@ -434,6 +434,7 @@ def burn(token_id: uint256):
 
 ### MINT FUNCTIONS ###
 
+
 @external
 @payable
 def allowlistMint(mint_amount: uint256, sig: Bytes[65]):
@@ -511,15 +512,18 @@ def contractURI() -> String[128]:
 
 ### ADMIN FUNCTIONS
 
+
 @external
 def set_minter(minter: address):
     assert msg.sender == self.owner
     self.minter = minter
 
+
 @external
 def set_al_signer(al_signer: address):
     assert msg.sender == self.owner
     self.al_signer = al_signer
+
 
 @external
 @view
@@ -535,7 +539,7 @@ def set_base_uri(base_uri: String[128]):
     @param base_uri New URI for the token
 
     """
-    assert msg.sender == self.owner
+    assert msg.sender == self.owner  # dev: Only Admin
     self.base_uri = base_uri
 
 
@@ -578,6 +582,7 @@ def withdraw():
 
     send(self.owner, self.balance)    
 
+
 @external
 def admin_withdraw_erc20(coin: address, target: address, amount: uint256):
     """
@@ -588,6 +593,7 @@ def admin_withdraw_erc20(coin: address, target: address, amount: uint256):
     """
     assert self.owner == msg.sender  # dev: "Admin Only"
     ERC20(coin).transfer(target, amount)
+
 
 @external
 def start_al_mint():
@@ -636,7 +642,8 @@ def tokenOfOwnerByIndex(owner: address, index: uint256) -> uint256:
     return self.token_by_owner[owner][index]
 
 
-## Signature helper
+## SIGNATURE HELPER  
+
 
 @internal
 @view
