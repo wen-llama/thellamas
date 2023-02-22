@@ -75,21 +75,6 @@ def al_minted(token, alice, deployer):
 
 
 @pytest.fixture(scope="function")
-def wl_minted(token, alice, deployer):
-    token.start_wl_mint()
-    # Sign a message from the wl_signer for alice
-    alice_encoded = encode(["string", "address"], ["whitelist:", alice.address])
-    alice_hashed = web3.keccak(alice_encoded)
-    alice_signable_message = encode_defunct(alice_hashed)
-    signed_message = Account.sign_message(alice_signable_message, deployer.private_key)
-    token.whitelistMint(
-        1, signed_message.signature, {"from": alice, "value": web3.toWei(0.01, "ether")}
-    )
-
-    return token
-
-
-@pytest.fixture(scope="function")
 def minted_token_id():
     return 20
 

@@ -469,7 +469,7 @@ def allowlistMint(mint_amount: uint256, sig: Bytes[65]):
             break
             
         token_id: uint256 = self.token_count
-        assert token_id <= max_supply
+        assert token_id < max_supply
         self._add_token_to(msg.sender, token_id)
         self.token_count += 1
 
@@ -487,7 +487,7 @@ def mint() -> uint256:
     assert msg.sender == self.minter
     
     token_id: uint256 = self.token_count
-    assert token_id <= max_supply
+    assert token_id < max_supply
     self._add_token_to(msg.sender, token_id)
     self.token_count += 1
 
