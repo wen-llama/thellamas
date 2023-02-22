@@ -1,5 +1,6 @@
 # @version 0.3.7
-# @notice Just a basic ERC721, nothing fancy except for whitelist and bulk minting functionality. 
+
+# @notice Just a basic ERC721, nothing fancy except for whitelist and bulk minting functionality.
 # @dev This would be equivalent to GBC.sol No extra functionality such as tracking how long an NFT has been held, distributing rewards, or tracking how many times someone has locked, that would all be handled off chain.  Modified from https://github.com/npc-ers/current-thing
 # @author The Llamas
 # @license MIT
@@ -22,11 +23,8 @@ implements: ERC165
 # Interface for the contract called by safeTransferFrom()
 interface ERC721Receiver:
     def onERC721Received(
-            operator: address,
-            sender: address,
-            tokenId: uint256,
-            data: Bytes[1024]
-        ) -> bytes4: nonpayable
+        operator: address, sender: address, tokenId: uint256, data: Bytes[1024]
+    ) -> bytes4: nonpayable
 
 
 # @dev Emits when ownership of any NFT changes by any mechanism.
@@ -67,7 +65,10 @@ event ApprovalForAll:
     _operator: indexed(address)
     _approved: bool
 
-IDENTITY_PRECOMPILE: constant(address) = 0x0000000000000000000000000000000000000004
+
+IDENTITY_PRECOMPILE: constant(
+    address
+) = 0x0000000000000000000000000000000000000004
 
 # Metadata
 symbol: public(String[32])
@@ -85,9 +86,13 @@ ids_by_owner: HashMap[address, DynArray[uint256, MAX_SUPPLY]]
 id_to_index: HashMap[uint256, uint256]
 token_count: uint256
 
-owned_tokens: HashMap[uint256, address]                       # @dev NFT ID to the address that owns it
-token_approvals: HashMap[uint256, address]                    # @dev NFT ID to approved address
-operator_approvals: HashMap[address, HashMap[address, bool]]  # @dev Owner address to mapping of operator addresses
+owned_tokens: HashMap[
+    uint256, address
+]  # @dev NFT ID to the address that owns it
+token_approvals: HashMap[uint256, address]  # @dev NFT ID to approved address
+operator_approvals: HashMap[
+    address, HashMap[address, bool]
+]  # @dev Owner address to mapping of operator addresses
 
 # @dev Static list of supported ERC165 interface ids
 SUPPORTED_INTERFACES: constant(bytes4[5]) = [
@@ -112,6 +117,7 @@ al_signer: public(address)
 minter: public(address)
 al_blocklist: HashMap[address, bool]
 
+
 @external
 def __init__(preminters: address[MAX_PREMINT]):
     self.symbol = "LLAMA"
@@ -129,6 +135,7 @@ def __init__(preminters: address[MAX_PREMINT]):
         self.token_count += 1
 
         log Transfer(empty(address), preminters[i], token_id)
+
 
 @pure
 @external
@@ -158,7 +165,9 @@ def balanceOf(owner: address) -> uint256:
     @return The address of the owner of the NFT
     """
 
-    assert owner != empty(address)  # dev: "ERC721: balance query for the zero address"
+    assert owner != empty(
+        address
+    )  # dev: "ERC721: balance query for the zero address"
     return len(self.ids_by_owner[owner])
 
 
@@ -174,7 +183,9 @@ def ownerOf(token_id: uint256) -> address:
     """
 
     owner: address = self.owned_tokens[token_id]
-    assert owner != empty(address)  # dev: "ERC721: owner query for nonexistent token"
+    assert owner != empty(
+        address
+    )  # dev: "ERC721: owner query for nonexistent token"
     return owner
 
 
@@ -228,7 +239,9 @@ def _is_approved_or_owner(spender: address, token_id: uint256) -> bool:
     spender_is_approved: bool = spender == self.token_approvals[token_id]
     spender_is_approved_for_all: bool = self.operator_approvals[owner][spender]
 
-    return (spender_is_owner or spender_is_approved) or spender_is_approved_for_all
+    return (
+        spender_is_owner or spender_is_approved
+    ) or spender_is_approved_for_all
 
 
 @internal
@@ -296,7 +309,9 @@ def _clear_approval(_owner: address, _token_id: uint256):
 
 
 @internal
-def _transfer_from(_from: address, _to: address, _token_id: uint256, _sender: address):
+def _transfer_from(
+    _from: address, _to: address, _token_id: uint256, _sender: address
+):
     """
     @dev Execute transfer of a NFT.
          Throws unless `msg.sender` is the current owner, an authorized operator, or the approved
@@ -348,7 +363,10 @@ def transferFrom(from_addr: address, to_addr: address, token_id: uint256):
 
 @external
 def safeTransferFrom(
-    from_addr: address, to_addr: address, token_id: uint256, data: Bytes[1024] = b""
+    from_addr: address,
+    to_addr: address,
+    token_id: uint256,
+    data: Bytes[1024] = b"",
 ):
     """
     @dev Transfers the ownership of an NFT from one address to another address.
@@ -373,7 +391,8 @@ def safeTransferFrom(
 
         # Throws if transfer destination is a contract which does not implement 'onERC721Received'
         assert return_value == method_id(
-            "onERC721Received(address,address,uint256,bytes)", output_type=bytes4
+            "onERC721Received(address,address,uint256,bytes)",
+            output_type=bytes4,
         )
 
 
@@ -392,7 +411,9 @@ def approve(approved: address, token_id: uint256):
     owner: address = self.owned_tokens[token_id]
 
     # Throws if `token_id` is not a valid NFT
-    assert owner != empty(address)  # dev: "ERC721: owner query for nonexistent token"
+    assert owner != empty(
+        address
+    )  # dev: "ERC721: owner query for nonexistent token"
 
     # Throws if `approved` is the current owner
     assert approved != owner  # dev: "ERC721: approval to current owner"
@@ -460,14 +481,18 @@ def allowlistMint(mint_amount: uint256, sig: Bytes[65]):
     # Checks
     assert self.al_mint_started == True, "AL Mint not started yet"
     assert mint_amount <= MAX_MINT_PER_TX, "Transaction exceeds max mint amount"
-    assert self.checkAlSignature(sig, msg.sender, mint_amount) == True, "Signature is not valid"
-    assert self.al_blocklist[msg.sender] == False, "The allowlisted address was already used"
+    assert (
+        self.checkAlSignature(sig, msg.sender, mint_amount) == True
+    ), "Signature is not valid"
+    assert (
+        self.al_blocklist[msg.sender] == False
+    ), "The allowlisted address was already used"
     assert msg.value >= COST * mint_amount, "Not enough ether provided"
 
     for i in range(MAX_MINT_PER_TX):
-        if (i >= mint_amount):
+        if i >= mint_amount:
             break
-            
+
         token_id: uint256 = self.token_count
         assert token_id < MAX_SUPPLY
         self._add_token_to(msg.sender, token_id)
@@ -477,6 +502,7 @@ def allowlistMint(mint_amount: uint256, sig: Bytes[65]):
 
     self.al_blocklist[msg.sender] = True
 
+
 @external
 def mint() -> uint256:
     """
@@ -485,7 +511,7 @@ def mint() -> uint256:
 
     # Checks
     assert msg.sender == self.minter
-    
+
     token_id: uint256 = self.token_count
     assert token_id < MAX_SUPPLY
     self._add_token_to(msg.sender, token_id)
@@ -565,7 +591,7 @@ def set_contract_uri(new_uri: String[66]):
     @param new_uri New URI for the contract
     """
 
-    assert msg.sender == self.owner # dev: Only Admin
+    assert msg.sender == self.owner  # dev: Only Admin
     self.contract_uri = new_uri
 
 
@@ -577,7 +603,7 @@ def set_owner(new_addr: address):
     """
 
     assert msg.sender == self.owner  # dev: Only Owner
-    self.owner = new_addr 
+    self.owner = new_addr
 
 
 @external
@@ -586,16 +612,16 @@ def set_revealed(flag: bool):
     @notice Admin function to reveal collection.  If not revealed, all NFTs show default_uri
     @param flag Boolean, True to reveal, False to conceal
     """
-    assert msg.sender == self.owner # dev: Only Owner
+    assert msg.sender == self.owner  # dev: Only Owner
 
     self.revealed = flag
 
 
 @external
 def withdraw():
-    assert self.owner == msg.sender # dev: "Admin Only"
+    assert self.owner == msg.sender  # dev: "Admin Only"
 
-    send(self.owner, self.balance)    
+    send(self.owner, self.balance)
 
 
 @external
@@ -612,7 +638,7 @@ def admin_withdraw_erc20(coin: address, target: address, amount: uint256):
 
 @external
 def start_al_mint():
-    assert self.owner == msg.sender # dev: "Admin Only"
+    assert self.owner == msg.sender  # dev: "Admin Only"
     self.al_mint_started = True
 
 
@@ -663,15 +689,22 @@ def tokensForOwner(owner: address) -> DynArray[uint256, MAX_SUPPLY]:
     return self.ids_by_owner[owner]
 
 
-## SIGNATURE HELPER  
+## SIGNATURE HELPER
 
 
 @internal
 @view
-def checkAlSignature(sig: Bytes[65], sender: address, mint_amount: uint256) -> bool:
+def checkAlSignature(
+    sig: Bytes[65], sender: address, mint_amount: uint256
+) -> bool:
     r: uint256 = convert(slice(sig, 0, 32), uint256)
     s: uint256 = convert(slice(sig, 32, 32), uint256)
     v: uint256 = convert(slice(sig, 64, 1), uint256)
-    ethSignedHash: bytes32 = keccak256(concat(b'\x19Ethereum Signed Message:\n32', keccak256(_abi_encode("allowlist:", sender, mint_amount))))
+    ethSignedHash: bytes32 = keccak256(
+        concat(
+            b"\x19Ethereum Signed Message:\n32",
+            keccak256(_abi_encode("allowlist:", sender, mint_amount)),
+        )
+    )
 
     return self.al_signer == ecrecover(ethSignedHash, v, r, s)

@@ -1,16 +1,20 @@
+# python
 __pycache__
-.history
-.hypothesis/
-.tox/
+*.pyc
+
 build/
 reports/
+.history
 venv/
 
 # testing
+.hypothesis/
+.tox/
 /coverage
 /reports
 
-*.pyc
+# vi(m)
 *.swp
+*.swo
 
 .env

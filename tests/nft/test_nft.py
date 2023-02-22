@@ -1,10 +1,9 @@
 import brownie
 import hexbytes
-import pytest
 from brownie import ZERO_ADDRESS, accounts, history, web3
-from eth_account.messages import encode_defunct
-from eth_account import Account
 from eth_abi import encode
+from eth_account import Account
+from eth_account.messages import encode_defunct
 
 #
 # These tests are meant to be executed with brownie. To run them:
@@ -26,7 +25,7 @@ def _ensureToken(token, token_id, owner):
         try:
             if token.ownerOf(token_id) == owner:
                 stop_mint = True
-        except:
+        except Exception:
             stop_mint = False
         if i > 10:
             assert False
@@ -81,7 +80,7 @@ def test_balanceOf_zero_address(token):
     # 40 hex digits, as otherwise the web3 ABI encoder treats the argument as a string
     # and is not able to find the matching ABI entry
     with brownie.reverts():  # "ERC721: balance query for the zero address"):
-        balance = token.balanceOf(ZERO_ADDRESS)
+        token.balanceOf(ZERO_ADDRESS)
 
 
 #
@@ -574,20 +573,20 @@ def test_setGetOperator(token):
     me = accounts[0]
     alice = accounts[1]
     bob = accounts[2]
-    assert False == token.isApprovedForAll(me, bob)
-    assert False == token.isApprovedForAll(me, alice)
+    assert not token.isApprovedForAll(me, bob)
+    assert not token.isApprovedForAll(me, alice)
     # Declare bob as operator for me
     txn_receipt = token.setApprovalForAll(bob, True, {"from": me})
     # Check
-    assert True == token.isApprovedForAll(me, bob)
-    assert False == token.isApprovedForAll(me, alice)
+    assert token.isApprovedForAll(me, bob)
+    assert not token.isApprovedForAll(me, alice)
     # Check events
     _verifyApprovalForAllEvent(txn_receipt, me, bob, True)
     # Do the same for alice
     txn_receipt = token.setApprovalForAll(alice, True, {"from": me})
     # Check
-    assert True == token.isApprovedForAll(me, bob)
-    assert True == token.isApprovedForAll(me, alice)
+    assert token.isApprovedForAll(me, bob)
+    assert token.isApprovedForAll(me, alice)
     # Check events
     _verifyApprovalForAllEvent(txn_receipt, me, alice, True)
     # Reset both
@@ -598,8 +597,8 @@ def test_setGetOperator(token):
     # Check events
     _verifyApprovalForAllEvent(txn_receipt, me, alice, False)
     # Check
-    assert False == token.isApprovedForAll(me, bob)
-    assert False == token.isApprovedForAll(me, alice)
+    assert not token.isApprovedForAll(me, bob)
+    assert not token.isApprovedForAll(me, alice)
 
 
 def test_only_approval_not_on_my_tokens(token, alice):
@@ -664,11 +663,11 @@ def test_transferFrom_operator(token, deployer):
 #
 def test_ERC615(token):
     # ERC721
-    assert True == token.supportsInterface("0x80ac58cd")
+    assert token.supportsInterface("0x80ac58cd")
     # ERC165 itself
-    assert True == token.supportsInterface("0x01ffc9a7")
+    assert token.supportsInterface("0x01ffc9a7")
     # ERC721 Metadata
-    assert True == token.supportsInterface("0x5b5e139f")
+    assert token.supportsInterface("0x5b5e139f")
 
 
 #

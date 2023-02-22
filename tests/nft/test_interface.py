@@ -1,7 +1,3 @@
-import pytest
-from brownie import *  # InterfaceChecker, accounts, exceptions
-
-
 def test_supports_interface_direct(token):
     assert token.supportsInterface(
         0x0000000000000000000000000000000000000000000000000000000001FFC9A7

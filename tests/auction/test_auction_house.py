@@ -1,10 +1,8 @@
 import brownie
-from brownie import chain, web3, ZERO_ADDRESS
-import pytest
-from eth_account.messages import encode_defunct
-from eth_account import Account
+from brownie import chain, web3
 from eth_abi import encode
-
+from eth_account import Account
+from eth_account.messages import encode_defunct
 
 # Initialization vars
 
@@ -34,11 +32,11 @@ def test_duration(auction_house):
 
 
 def test_paused(auction_house):
-    assert auction_house.paused() == True
+    assert auction_house.paused()
 
 
 def test_wl_enabled(auction_house):
-    assert auction_house.wl_enabled() == True
+    assert auction_house.wl_enabled()
 
 
 def test_wl_signer(auction_house, deployer):
@@ -74,11 +72,11 @@ def test_set_wl_signer(auction_house, alice):
 
 
 def test_enable_disable_wl(auction_house):
-    assert auction_house.wl_enabled() == True
+    assert auction_house.wl_enabled()
     auction_house.disable_wl()
-    assert auction_house.wl_enabled() == False
+    assert not auction_house.wl_enabled()
     auction_house.enable_wl()
-    assert auction_house.wl_enabled() == True
+    assert auction_house.wl_enabled()
 
 
 def test_set_owner_not_owner(auction_house, alice):
@@ -107,11 +105,11 @@ def test_set_wl_signer_now_owner(auction_house, alice):
 
 
 def test_pause_unpause(auction_house_unpaused, token, minted_token_id):
-    assert auction_house_unpaused.paused() == False
+    assert not auction_house_unpaused.paused()
     assert auction_house_unpaused.auction()["llama_id"] == minted_token_id
-    assert auction_house_unpaused.auction()["settled"] == False
+    assert not auction_house_unpaused.auction()["settled"]
     auction_house_unpaused.pause()
-    assert auction_house_unpaused.paused() == True
+    assert auction_house_unpaused.paused()
 
 
 def test_pause_not_owner(auction_house, alice):
@@ -371,11 +369,11 @@ def test_withdraw_zero_pending(auction_house, alice):
 
 
 def test_settle_auction_no_bid(auction_house_unpaused):
-    assert auction_house_unpaused.auction()["settled"] == False
+    assert not auction_house_unpaused.auction()["settled"]
     chain.sleep(1000)
     auction_house_unpaused.pause()
     auction_house_unpaused.settle_auction()
-    assert auction_house_unpaused.auction()["settled"] == True
+    assert auction_house_unpaused.auction()["settled"]
 
 
 def test_settle_auction_when_not_paused(auction_house_unpaused):
@@ -385,32 +383,32 @@ def test_settle_auction_when_not_paused(auction_house_unpaused):
 
 def test_settle_current_and_create_new_auction_no_bid(auction_house_unpaused):
     auction_house_unpaused.disable_wl()
-    assert auction_house_unpaused.auction()["settled"] == False
+    assert not auction_house_unpaused.auction()["settled"]
     old_auction_id = auction_house_unpaused.auction()["llama_id"]
     chain.sleep(1000)
     auction_house_unpaused.settle_current_and_create_new_auction()
     new_auction_id = auction_house_unpaused.auction()["llama_id"]
-    assert auction_house_unpaused.auction()["settled"] == False
+    assert not auction_house_unpaused.auction()["settled"]
     assert old_auction_id < new_auction_id
 
 
 def test_settle_auction_with_bid(token, deployer, auction_house_unpaused, alice):
     auction_house_unpaused.disable_wl()
-    assert auction_house_unpaused.auction()["settled"] == False
+    assert not auction_house_unpaused.auction()["settled"]
     auction_house_unpaused.create_bid(20, {"from": alice, "value": "100 wei"})
     chain.sleep(1000)
     auction_house_unpaused.pause()
     deployer_balance_before = deployer.balance()
     auction_house_unpaused.settle_auction()
     deployer_balance_after = deployer.balance()
-    assert auction_house_unpaused.auction()["settled"] == True
+    assert auction_house_unpaused.auction()["settled"]
     assert token.ownerOf(20) == alice
     assert deployer_balance_after == deployer_balance_before + 100
 
 
 def test_settle_current_and_create_new_auction_with_bid(deployer, auction_house_unpaused, alice):
     auction_house_unpaused.disable_wl()
-    assert auction_house_unpaused.auction()["settled"] == False
+    assert not auction_house_unpaused.auction()["settled"]
     old_auction_id = auction_house_unpaused.auction()["llama_id"]
     auction_house_unpaused.create_bid(20, {"from": alice, "value": "100 wei"})
     chain.sleep(1000)
@@ -418,7 +416,7 @@ def test_settle_current_and_create_new_auction_with_bid(deployer, auction_house_
     auction_house_unpaused.settle_current_and_create_new_auction()
     deployer_balance_after = deployer.balance()
     new_auction_id = auction_house_unpaused.auction()["llama_id"]
-    assert auction_house_unpaused.auction()["settled"] == False
+    assert not auction_house_unpaused.auction()["settled"]
     assert old_auction_id < new_auction_id
     assert deployer_balance_after == deployer_balance_before + 100
 
@@ -431,7 +429,7 @@ def test_settle_current_and_create_new_auction_when_paused(token, auction_house)
 
 def test_settle_auction_multiple_bids(token, deployer, auction_house_unpaused, alice, bob):
     auction_house_unpaused.disable_wl()
-    assert auction_house_unpaused.auction()["settled"] == False
+    assert not auction_house_unpaused.auction()["settled"]
     alice_balance_start = alice.balance()
     auction_house_unpaused.create_bid(20, {"from": alice, "value": "100 wei"})
     auction_house_unpaused.create_bid(20, {"from": bob, "value": "1000 wei"})
@@ -445,14 +443,14 @@ def test_settle_auction_multiple_bids(token, deployer, auction_house_unpaused, a
     auction_house_unpaused.withdraw({"from": alice})
     alice_balance_after_withdraw = alice.balance()
     assert alice_balance_after_withdraw == alice_balance_start
-    assert auction_house_unpaused.auction()["settled"] == True
+    assert auction_house_unpaused.auction()["settled"]
     assert token.ownerOf(20) == bob
     assert deployer_balance_after == deployer_balance_before + 1000
 
 
 def test_bidder_outbids_prev_bidder(token, auction_house_unpaused, deployer, alice, bob):
     auction_house_unpaused.disable_wl()
-    assert auction_house_unpaused.auction()["settled"] == False
+    assert not auction_house_unpaused.auction()["settled"]
     alice_balance_start = alice.balance()
     bob_balance_start = bob.balance()
     auction_house_unpaused.create_bid(20, {"from": alice, "value": "100 wei"})
@@ -472,7 +470,7 @@ def test_bidder_outbids_prev_bidder(token, auction_house_unpaused, deployer, ali
     bob_balance_after_withdraw = bob.balance()
     assert alice_balance_after_withdraw == alice_balance_start - 2000
     assert bob_balance_after_withdraw == bob_balance_start
-    assert auction_house_unpaused.auction()["settled"] == False
+    assert not auction_house_unpaused.auction()["settled"]
     assert token.ownerOf(20) == alice
     assert deployer_balance_after == deployer_balance_before + 2000
 
@@ -484,7 +482,7 @@ def test_create_bid_auction_extended(auction_house_unpaused, alice, bob):
     chain.sleep(90)
     auction_house_unpaused.create_bid(20, {"from": bob, "value": "1000 wei"})
     assert auction_house_unpaused.auction()["end_time"] == starting_block_timestamp + 190
-    assert auction_house_unpaused.auction()["settled"] == False
+    assert not auction_house_unpaused.auction()["settled"]
 
 
 def test_create_bid_auction_not_extended(auction_house_unpaused, alice, bob):
