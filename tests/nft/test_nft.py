@@ -1,10 +1,9 @@
 import brownie
 import hexbytes
-import pytest
 from brownie import ZERO_ADDRESS, accounts, history, web3
-from eth_account.messages import encode_defunct
-from eth_account import Account
 from eth_abi import encode
+from eth_account import Account
+from eth_account.messages import encode_defunct
 
 #
 # These tests are meant to be executed with brownie. To run them:
@@ -26,7 +25,7 @@ def _ensureToken(token, token_id, owner):
         try:
             if token.ownerOf(token_id) == owner:
                 stop_mint = True
-        except:
+        except Exception:
             stop_mint = False
         if i > 10:
             assert False
@@ -81,7 +80,7 @@ def test_balanceOf_zero_address(token):
     # 40 hex digits, as otherwise the web3 ABI encoder treats the argument as a string
     # and is not able to find the matching ABI entry
     with brownie.reverts():  # "ERC721: balance query for the zero address"):
-        balance = token.balanceOf(ZERO_ADDRESS)
+        token.balanceOf(ZERO_ADDRESS)
 
 
 #
@@ -105,15 +104,18 @@ def test_mint(minted, deployer, minted_token_id):
     txn_receipt = history[-1]
     _verifyTransferEvent(txn_receipt, ZERO_ADDRESS, deployer, minted_token_id)
 
+
 def test_mint_not_minter(token, alice):
     with brownie.reverts():
-        token.mint({'from': alice})
+        token.mint({"from": alice})
+
 
 def test_allowlist_mint_one(al_minted, alice, minted_token_id):
     assert al_minted.balanceOf(alice) == 1
     assert alice == al_minted.ownerOf(minted_token_id)
     txn_receipt = history[-1]
     _verifyTransferEvent(txn_receipt, ZERO_ADDRESS, alice, minted_token_id)
+
 
 def test_allowlist_mint_max(token, alice, deployer):
     token.start_al_mint()
@@ -122,7 +124,10 @@ def test_allowlist_mint_max(token, alice, deployer):
     alice_hashed = web3.keccak(alice_encoded)
     alice_signable_message = encode_defunct(alice_hashed)
     signed_message = Account.sign_message(alice_signable_message, deployer.private_key)
-    token.allowlistMint(3, signed_message.signature, {'from': alice, 'value': web3.toWei(0.03, 'ether')})
+    token.allowlistMint(
+        3, signed_message.signature, {"from": alice, "value": web3.toWei(0.03, "ether")}
+    )
+
 
 def test_allowlist_mint_not_started(token, alice, deployer):
     alice_encoded = encode(["string", "address"], ["allowlist:", alice.address])
@@ -130,7 +135,10 @@ def test_allowlist_mint_not_started(token, alice, deployer):
     alice_signable_message = encode_defunct(alice_hashed)
     signed_message = Account.sign_message(alice_signable_message, deployer.private_key)
     with brownie.reverts("AL Mint not started yet"):
-        token.allowlistMint(1, signed_message.signature, {'from': alice, 'value': web3.toWei(0.01, 'ether')})
+        token.allowlistMint(
+            1, signed_message.signature, {"from": alice, "value": web3.toWei(0.01, "ether")}
+        )
+
 
 def test_allowlist_mint_address_already_used(token, alice, deployer):
     token.start_al_mint()
@@ -138,9 +146,14 @@ def test_allowlist_mint_address_already_used(token, alice, deployer):
     alice_hashed = web3.keccak(alice_encoded)
     alice_signable_message = encode_defunct(alice_hashed)
     signed_message = Account.sign_message(alice_signable_message, deployer.private_key)
-    token.allowlistMint(1, signed_message.signature, {'from': alice, 'value': web3.toWei(0.01, 'ether')})
+    token.allowlistMint(
+        1, signed_message.signature, {"from": alice, "value": web3.toWei(0.01, "ether")}
+    )
     with brownie.reverts("The allowlisted address was already used"):
-        token.allowlistMint(1, signed_message.signature, {'from': alice, 'value': web3.toWei(0.01, 'ether')})
+        token.allowlistMint(
+            1, signed_message.signature, {"from": alice, "value": web3.toWei(0.01, "ether")}
+        )
+
 
 def test_allowlist_mint_too_many(token, alice, deployer):
     token.start_al_mint()
@@ -149,7 +162,10 @@ def test_allowlist_mint_too_many(token, alice, deployer):
     alice_signable_message = encode_defunct(alice_hashed)
     signed_message = Account.sign_message(alice_signable_message, deployer.private_key)
     with brownie.reverts("Transaction exceeds max mint amount"):
-        token.allowlistMint(4, signed_message.signature, {'from': alice, 'value': web3.toWei(0.21, 'ether')})
+        token.allowlistMint(
+            4, signed_message.signature, {"from": alice, "value": web3.toWei(0.04, "ether")}
+        )
+
 
 def test_allowlist_mint_one_not_enough_value(token, alice, deployer):
     token.start_al_mint()
@@ -158,7 +174,10 @@ def test_allowlist_mint_one_not_enough_value(token, alice, deployer):
     alice_signable_message = encode_defunct(alice_hashed)
     signed_message = Account.sign_message(alice_signable_message, deployer.private_key)
     with brownie.reverts("Not enough ether provided"):
-        token.allowlistMint(1, signed_message.signature, {'from': alice, 'value': web3.toWei(0.009, 'ether')})
+        token.allowlistMint(
+            1, signed_message.signature, {"from": alice, "value": web3.toWei(0.009, "ether")}
+        )
+
 
 def test_allowlist_mint_not_approved_amount(token, alice, deployer):
     token.start_al_mint()
@@ -167,20 +186,25 @@ def test_allowlist_mint_not_approved_amount(token, alice, deployer):
     alice_signable_message = encode_defunct(alice_hashed)
     signed_message = Account.sign_message(alice_signable_message, deployer.private_key)
     with brownie.reverts("Signature is not valid"):
-        token.allowlistMint(3, signed_message.signature, {'from': alice, 'value': web3.toWei(0.009, 'ether')})
+        token.allowlistMint(
+            3, signed_message.signature, {"from": alice, "value": web3.toWei(0.03, "ether")}
+        )
+
 
 def test_withdraw(token, deployer, al_minted):
     balanceBefore = deployer.balance()
-    token.withdraw({'from': deployer})
+    token.withdraw({"from": deployer})
     balanceAfter = deployer.balance()
 
-    assert balanceAfter == balanceBefore + web3.toWei(0.01, 'ether')
+    assert balanceAfter == balanceBefore + web3.toWei(0.01, "ether")
+
 
 def test_withdraw_only_owner(token, alice, deployer):
     token.mint()
 
     with brownie.reverts():
-        token.withdraw({'from': alice})
+        token.withdraw({"from": alice})
+
 
 #
 # Cannot mint an existing token
@@ -306,9 +330,7 @@ def test_safe_transfer_from_not_owner(token, deployer, bob, charlie):
     token_id = 20
     _ensureToken(token, token_id, deployer)
     with brownie.reverts():  # "ERC721: transfer caller is not owner nor approved"):
-        token.safeTransferFrom(
-            charlie, bob, token_id, hexbytes.HexBytes(""), {"from": charlie}
-        )
+        token.safeTransferFrom(charlie, bob, token_id, hexbytes.HexBytes(""), {"from": charlie})
 
 
 #
@@ -334,9 +356,7 @@ def test_safe_transfer_tid_from_to_zero_address(token, deployer, bob):
 
     # Now do the transfer
     with brownie.reverts():
-        token.safeTransferFrom(
-            deployer, bob, token_id, hexbytes.HexBytes(""), {"from": deployer}
-        )
+        token.safeTransferFrom(deployer, bob, token_id, hexbytes.HexBytes(""), {"from": deployer})
 
 
 #
@@ -346,9 +366,7 @@ def test_safe_transfer_from_not_authorized(token, deployer, bob, charlie):
     token_id = 20
     _ensureToken(token, token_id, deployer)
     with brownie.reverts():  # "ERC721: transfer caller is not owner nor approved"):
-        token.safeTransferFrom(
-            deployer, bob, token_id, hexbytes.HexBytes(""), {"from": bob}
-        )
+        token.safeTransferFrom(deployer, bob, token_id, hexbytes.HexBytes(""), {"from": bob})
 
 
 #
@@ -526,20 +544,20 @@ def test_setGetOperator(token):
     me = accounts[0]
     alice = accounts[1]
     bob = accounts[2]
-    assert False == token.isApprovedForAll(me, bob)
-    assert False == token.isApprovedForAll(me, alice)
+    assert not token.isApprovedForAll(me, bob)
+    assert not token.isApprovedForAll(me, alice)
     # Declare bob as operator for me
     txn_receipt = token.setApprovalForAll(bob, True, {"from": me})
     # Check
-    assert True == token.isApprovedForAll(me, bob)
-    assert False == token.isApprovedForAll(me, alice)
+    assert token.isApprovedForAll(me, bob)
+    assert not token.isApprovedForAll(me, alice)
     # Check events
     _verifyApprovalForAllEvent(txn_receipt, me, bob, True)
     # Do the same for alice
     txn_receipt = token.setApprovalForAll(alice, True, {"from": me})
     # Check
-    assert True == token.isApprovedForAll(me, bob)
-    assert True == token.isApprovedForAll(me, alice)
+    assert token.isApprovedForAll(me, bob)
+    assert token.isApprovedForAll(me, alice)
     # Check events
     _verifyApprovalForAllEvent(txn_receipt, me, alice, True)
     # Reset both
@@ -550,8 +568,8 @@ def test_setGetOperator(token):
     # Check events
     _verifyApprovalForAllEvent(txn_receipt, me, alice, False)
     # Check
-    assert False == token.isApprovedForAll(me, bob)
-    assert False == token.isApprovedForAll(me, alice)
+    assert not token.isApprovedForAll(me, bob)
+    assert not token.isApprovedForAll(me, alice)
 
 
 def test_only_approval_not_on_my_tokens(token, alice):
@@ -616,11 +634,11 @@ def test_transferFrom_operator(token, deployer):
 #
 def test_ERC615(token):
     # ERC721
-    assert True == token.supportsInterface("0x80ac58cd")
+    assert token.supportsInterface("0x80ac58cd")
     # ERC165 itself
-    assert True == token.supportsInterface("0x01ffc9a7")
+    assert token.supportsInterface("0x01ffc9a7")
     # ERC721 Metadata
-    assert True == token.supportsInterface("0x5b5e139f")
+    assert token.supportsInterface("0x5b5e139f")
 
 
 #

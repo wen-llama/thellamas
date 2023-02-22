@@ -25,12 +25,6 @@ def test_new_owner_can_set_old_owner(token, deployer, alice):
     assert token.owner() == deployer
 
 
-def test_new_owner_can_set_old_owner(token, deployer, alice, bob):
-    token.set_owner(alice, {"from": deployer})
-    token.set_owner(bob, {"from": alice})
-    assert token.owner() == bob
-
-
 def test_rando_cannot_set_owner(token, alice):
     with brownie.reverts():
         token.set_owner(alice, {"from": alice})
@@ -60,7 +54,7 @@ def test_admin_can_withdraw_erc20(token, alice, erc20, deployer):
     assert erc20.balanceOf(alice) == 0
     assert erc20.balanceOf(token) == 10**18
 
-    token.admin_withdraw_erc20(erc20, alice, thing.balanceOf(token), {"from": deployer})
+    token.admin_withdraw_erc20(erc20, alice, erc20.balanceOf(token), {"from": deployer})
     assert erc20.balanceOf(alice) == 10**18
     assert erc20.balanceOf(token) == 0
 

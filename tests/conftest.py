@@ -1,11 +1,10 @@
 #!/usr/bin/python3
 
 import pytest
-from brownie import Llama, ERC721TokenReceiverImplementation, accounts, web3
-
-from eth_account.messages import encode_defunct
-from eth_account import Account
+from brownie import ERC721TokenReceiverImplementation, accounts, web3
 from eth_abi import encode
+from eth_account import Account
+from eth_account.messages import encode_defunct
 
 
 @pytest.fixture(scope="function", autouse=True)
@@ -75,21 +74,6 @@ def al_minted(token, alice, deployer):
 
 
 @pytest.fixture(scope="function")
-def wl_minted(token, alice, deployer):
-    token.start_wl_mint()
-    # Sign a message from the wl_signer for alice
-    alice_encoded = encode(["string", "address"], ["whitelist:", alice.address])
-    alice_hashed = web3.keccak(alice_encoded)
-    alice_signable_message = encode_defunct(alice_hashed)
-    signed_message = Account.sign_message(alice_signable_message, deployer.private_key)
-    token.whitelistMint(
-        1, signed_message.signature, {"from": alice, "value": web3.toWei(0.01, "ether")}
-    )
-
-    return token
-
-
-@pytest.fixture(scope="function")
 def minted_token_id():
     return 20
 
@@ -114,11 +98,6 @@ def token_metadata():
 @pytest.fixture(scope="function")
 def tokenReceiver(deployer):
     return ERC721TokenReceiverImplementation.deploy({"from": deployer})
-
-
-@pytest.fixture(scope="function")
-def weth(Weth):
-    ERC721.deploy({"from": deployer})
 
 
 @pytest.fixture(scope="function")
