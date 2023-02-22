@@ -481,12 +481,16 @@ def allowlistMint(mint_amount: uint256, sig: Bytes[65]):
     # Checks
     assert self.al_mint_started == True, "AL Mint not started yet"
     assert mint_amount <= MAX_MINT_PER_TX, "Transaction exceeds max mint amount"
-    assert self.checkAlSignature(sig, msg.sender, mint_amount) == True, "Signature is not valid"
-    assert self.al_blocklist[msg.sender] == False, "The allowlisted address was already used"
+    assert (
+        self.checkAlSignature(sig, msg.sender, mint_amount) == True
+    ), "Signature is not valid"
+    assert (
+        self.al_blocklist[msg.sender] == False
+    ), "The allowlisted address was already used"
     assert msg.value >= COST * mint_amount, "Not enough ether provided"
 
     for i in range(MAX_MINT_PER_TX):
-        if (i >= mint_amount):
+        if i >= mint_amount:
             break
 
         token_id: uint256 = self.token_count
