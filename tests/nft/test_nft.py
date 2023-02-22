@@ -196,34 +196,6 @@ def test_withdraw_only_owner(token, alice, deployer):
 
 
 #
-# Burn a token
-#
-def test_burn_by_owner(token, preminter):
-    tokenID = 1
-    txn_receipt = token.burn(tokenID, {"from": preminter})
-    # Verify that burning has created an event
-    _verifyTransferEvent(txn_receipt, preminter, "0x"+40*"0", tokenID)
-
-
-def test_burn_by_approved(token, alice, preminter):
-    tokenID = 1
-    _ensureToken(token, tokenID, preminter)
-    token.approve(alice, tokenID, {"from": preminter})
-    txn_receipt = token.burn(tokenID, {"from": alice})
-    _verifyTransferEvent(txn_receipt, preminter, "0x"+40*"0", tokenID)
-
-
-#
-# Only the owner or approved can burn
-#
-def test_burn_not_owner_or_approved(token, bob, preminter):
-   tokenID = 1
-   _ensureToken(token, tokenID, preminter)
-   # Try to burn
-   with brownie.reverts():
-       token.burn(tokenID, {"from": bob})
-
-#
 # Get owner of non-existing token
 #
 def test_owner_of_invalid_token_id(token):

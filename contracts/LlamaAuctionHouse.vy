@@ -314,7 +314,7 @@ def _settle_auction():
   self.auction.settled = True
 
   if (self.auction.bidder == empty(address)):
-    self.llamas.burn(self.auction.llama_id)
+    self.llamas.transferFrom(self, self.owner, self.auction.llama_id)
   else:
     self.llamas.transferFrom(self, self.auction.bidder, self.auction.llama_id)
     if (self.wl_enabled):

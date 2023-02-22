@@ -140,6 +140,11 @@ def test_create_wl_bid(auction_house_unpaused, alice, deployer):
     assert current_auction["amount"] == 100
 
 
+def test_create_bid_wl_enabled(auction_house_unpaused, alice):
+    with brownie.reverts("Public auction is not enabled"):
+        auction_house_unpaused.create_bid(20, {"from": alice, "value": "100 wei"})
+
+
 def test_create_wl_bid_invalid_signature(auction_house_unpaused, alice, deployer):
     alice_encoded = encode(["string", "address"], ["blah:", alice.address])
     alice_hashed = web3.keccak(alice_encoded)
@@ -289,11 +294,6 @@ def test_create_bid(auction_house_unpaused, alice):
     assert current_auction["amount"] == 100
 
 
-def test_create_bid_wl_enabled(auction_house_unpaused, alice):
-    with brownie.reverts("Public auction is not enabled"):
-        auction_house_unpaused.create_bid(20, {"from": alice, "value": "100 wei"})
-
-
 def test_create_bid_send_more_than_last_bid(auction_house_unpaused, alice, bob):
     auction_house_unpaused.disable_wl()
     auction_house_unpaused.create_bid(20, {"from": alice, "value": "100 wei"})
@@ -342,6 +342,9 @@ def test_create_bid_not_over_prev_bid(auction_house_unpaused, alice, bob):
     assert bid_after["amount"] == 100
 
 
+# WITHDRAW
+
+
 def test_create_second_bid_and_withdraw(auction_house_unpaused, alice, bob):
     auction_house_unpaused.disable_wl()
     auction_house_unpaused.create_bid(20, {"from": alice, "value": "100 wei"})
@@ -370,12 +373,17 @@ def test_withdraw_zero_pending(auction_house, alice):
     assert balance_before == balance_after
 
 
-def test_settle_auction_no_bid(auction_house_unpaused):
+# SETTLE AUCTION
+
+
+def test_settle_auction_no_bid(token, deployer, auction_house_unpaused):
     assert auction_house_unpaused.auction()["settled"] == False
     chain.sleep(1000)
     auction_house_unpaused.pause()
     auction_house_unpaused.settle_auction()
     assert auction_house_unpaused.auction()["settled"] == True
+    # Token was transferred to owner when no one bid
+    assert token.ownerOf(20) == deployer
 
 
 def test_settle_auction_when_not_paused(auction_house_unpaused):
@@ -383,7 +391,7 @@ def test_settle_auction_when_not_paused(auction_house_unpaused):
         auction_house_unpaused.settle_auction()
 
 
-def test_settle_current_and_create_new_auction_no_bid(auction_house_unpaused):
+def test_settle_current_and_create_new_auction_no_bid(token, deployer, auction_house_unpaused):
     auction_house_unpaused.disable_wl()
     assert auction_house_unpaused.auction()["settled"] == False
     old_auction_id = auction_house_unpaused.auction()["llama_id"]
@@ -392,6 +400,8 @@ def test_settle_current_and_create_new_auction_no_bid(auction_house_unpaused):
     new_auction_id = auction_house_unpaused.auction()["llama_id"]
     assert auction_house_unpaused.auction()["settled"] == False
     assert old_auction_id < new_auction_id
+    # Token was transferred to owner when no one bid
+    assert token.ownerOf(20) == deployer
 
 
 def test_settle_auction_with_bid(token, deployer, auction_house_unpaused, alice):
@@ -475,6 +485,9 @@ def test_bidder_outbids_prev_bidder(token, auction_house_unpaused, deployer, ali
     assert auction_house_unpaused.auction()["settled"] == False
     assert token.ownerOf(20) == alice
     assert deployer_balance_after == deployer_balance_before + 2000
+
+
+# AUCTION EXTENSION
 
 
 def test_create_bid_auction_extended(auction_house_unpaused, alice, bob):
