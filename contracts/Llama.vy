@@ -81,7 +81,7 @@ base_uri: public(String[128])
 contract_uri: String[128]
 
 # NFT Data
-ids_by_owner: HashMap[address, DynArray[uint256, max_supply]]
+ids_by_owner: HashMap[address, DynArray[uint256, MAX_SUPPLY]]
 id_to_index: HashMap[uint256, uint256]
 token_count: uint256
 
@@ -102,10 +102,10 @@ SUPPORTED_INTERFACES: constant(bytes4[5]) = [
 revealed: public(bool)
 default_uri: public(String[150])
 
-max_supply: constant(uint256) = 1111
-max_premint: constant(uint256) = 20
-max_mint_per_tx: constant(uint256) = 3
-cost: constant(uint256) = as_wei_value(0.01, "ether")
+MAX_SUPPLY: constant(uint256) = 1111
+MAX_PREMINT: constant(uint256) = 20
+MAX_MINT_PER_TX: constant(uint256) = 3
+COST: constant(uint256) = as_wei_value(0.01, "ether")
 
 al_mint_started: public(bool)
 al_signer: public(address)
@@ -113,7 +113,7 @@ minter: public(address)
 al_blocklist: HashMap[address, bool]
 
 @external
-def __init__(preminters: address[max_premint]):
+def __init__(preminters: address[MAX_PREMINT]):
     self.symbol = "LLAMA"
     self.name = "The Llamas"
     self.owner = msg.sender
@@ -123,7 +123,7 @@ def __init__(preminters: address[max_premint]):
     self.al_signer = msg.sender
     self.minter = msg.sender
 
-    for i in range(max_premint):
+    for i in range(MAX_PREMINT):
         token_id: uint256 = self.token_count
         self._add_token_to(preminters[i], token_id)
         self.token_count += 1
@@ -459,17 +459,17 @@ def allowlistMint(mint_amount: uint256, sig: Bytes[65]):
 
     # Checks
     assert self.al_mint_started == True, "AL Mint not started yet"
-    assert mint_amount <= max_mint_per_tx, "Transaction exceeds max mint amount"
+    assert mint_amount <= MAX_MINT_PER_TX, "Transaction exceeds max mint amount"
     assert self.checkAlSignature(sig, msg.sender, mint_amount) == True, "Signature is not valid"
     assert self.al_blocklist[msg.sender] == False, "The allowlisted address was already used"
-    assert msg.value >= cost * mint_amount, "Not enough ether provided"
+    assert msg.value >= COST * mint_amount, "Not enough ether provided"
 
-    for i in range(max_mint_per_tx):
+    for i in range(MAX_MINT_PER_TX):
         if (i >= mint_amount):
             break
             
         token_id: uint256 = self.token_count
-        assert token_id <= max_supply
+        assert token_id < MAX_SUPPLY
         self._add_token_to(msg.sender, token_id)
         self.token_count += 1
 
@@ -487,7 +487,7 @@ def mint() -> uint256:
     assert msg.sender == self.minter
     
     token_id: uint256 = self.token_count
-    assert token_id <= max_supply
+    assert token_id < MAX_SUPPLY
     self._add_token_to(msg.sender, token_id)
     self.token_count += 1
 
@@ -659,7 +659,7 @@ def tokenOfOwnerByIndex(owner: address, index: uint256) -> uint256:
 
 @external
 @view
-def tokensForOwner(owner: address) -> DynArray[uint256, max_supply]:
+def tokensForOwner(owner: address) -> DynArray[uint256, MAX_SUPPLY]:
     return self.ids_by_owner[owner]
 
 
