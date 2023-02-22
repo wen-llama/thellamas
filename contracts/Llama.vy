@@ -449,25 +449,6 @@ def setApprovalForAll(operator: address, approved: bool):
     log ApprovalForAll(msg.sender, operator, approved)
 
 
-@external
-def burn(token_id: uint256):
-    """
-    @notice function to burn a token
-    @param token_id The token to burn
-    """
-
-    assert self._is_approved_or_owner(
-        msg.sender, token_id
-    )  # dev : "ERC721: transfer caller is not owner nor approved"
-
-    owner: address = self.owned_tokens[token_id]
-    self._clear_approval(owner, token_id)
-    self._remove_token_from(owner, token_id)
-    self._add_token_to(empty(address), token_id)
-
-    log Transfer(owner, empty(address), token_id)
-
-
 ### MINT FUNCTIONS ###
 
 
