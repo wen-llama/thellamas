@@ -65,6 +65,10 @@ event AuctionSettled:
     _amount: uint256
 
 
+IDENTITY_PRECOMPILE: constant(
+    address
+) = 0x0000000000000000000000000000000000000004
+
 # Auction
 llamas: public(Llama)
 time_buffer: public(uint256)
