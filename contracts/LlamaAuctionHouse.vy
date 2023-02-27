@@ -65,6 +65,13 @@ event AuctionSettled:
     _amount: uint256
 
 
+# Technically vyper doesn't need this as it is automatic
+# in all recent vyper versions, but Etherscan verification
+# will bork without it.
+IDENTITY_PRECOMPILE: constant(
+    address
+) = 0x0000000000000000000000000000000000000004
+
 # Auction
 llamas: public(Llama)
 time_buffer: public(uint256)
