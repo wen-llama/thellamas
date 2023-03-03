@@ -5,3 +5,6 @@ networks:
   development:
       cmd_settings:
           evm_version: berlin
+
+compiler:
+  evm_version: berlin
