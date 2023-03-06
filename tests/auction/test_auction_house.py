@@ -79,6 +79,14 @@ def test_enable_disable_wl(auction_house):
     assert auction_house.wl_enabled()
 
 
+def test_pause_unpause(auction_house_unpaused, minted_token_id):
+    assert not auction_house_unpaused.paused()
+    assert auction_house_unpaused.auction()["llama_id"] == minted_token_id
+    assert not auction_house_unpaused.auction()["settled"]
+    auction_house_unpaused.pause()
+    assert auction_house_unpaused.paused()
+
+
 def test_set_owner_not_owner(auction_house, alice):
     with brownie.reverts():
         auction_house.set_owner(alice, {"from": alice})
@@ -104,14 +112,6 @@ def test_set_wl_signer_now_owner(auction_house, alice):
         auction_house.set_wl_signer(alice, {"from": alice})
 
 
-def test_pause_unpause(auction_house_unpaused, token, minted_token_id):
-    assert not auction_house_unpaused.paused()
-    assert auction_house_unpaused.auction()["llama_id"] == minted_token_id
-    assert not auction_house_unpaused.auction()["settled"]
-    auction_house_unpaused.pause()
-    assert auction_house_unpaused.paused()
-
-
 def test_pause_not_owner(auction_house, alice):
     with brownie.reverts():
         auction_house.pause({"from": alice})
@@ -120,6 +120,11 @@ def test_pause_not_owner(auction_house, alice):
 def test_unpause_not_owner(auction_house, alice):
     with brownie.reverts():
         auction_house.unpause({"from": alice})
+
+
+def test_withdraw_stale_not_owner(auction_house, alice):
+    with brownie.reverts():
+        auction_house.withdraw_stale([alice, alice], {"from": alice})
 
 
 # WL Bidding
@@ -369,6 +374,29 @@ def test_withdraw_zero_pending(auction_house, alice):
     auction_house.withdraw({"from": alice})
     balance_after = alice.balance()
     assert balance_before == balance_after
+
+
+def test_withdraw_stale(token, auction_house_unpaused, deployer, alice, bob):
+    auction_house_unpaused.disable_wl()
+    balance_of_alice_before = alice.balance()
+    auction_house_unpaused.create_bid(20, {"from": alice, "value": "100 wei"})
+    auction_house_unpaused.create_bid(20, {"from": bob, "value": "200 wei"})
+    balance_of_deployer_before = deployer.balance()
+    chain.sleep(1000)
+    auction_house_unpaused.settle_current_and_create_new_auction()
+    assert token.ownerOf(20) == bob
+    assert deployer.balance() == balance_of_deployer_before + 200
+    assert alice.balance() == balance_of_alice_before - 100
+    assert auction_house_unpaused.pending_returns(alice) == 100
+    auction_house_unpaused.withdraw_stale([alice])
+    assert auction_house_unpaused.pending_returns(alice) == 0
+    assert alice.balance() == balance_of_alice_before - 5 # Alice gets a 5% penalty
+    assert deployer.balance() == balance_of_deployer_before + 205 # The owner takes 5% of alices pending returns
+
+def test_withdraw_stale_user_has_no_pending_withdraws(auction_house_unpaused, alice):
+    balance_of_alice_before = alice.balance()
+    auction_house_unpaused.withdraw_stale([alice])
+    assert alice.balance() == balance_of_alice_before
 
 
 def test_settle_auction_no_bid(token, deployer, auction_house_unpaused):
