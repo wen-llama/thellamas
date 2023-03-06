@@ -390,8 +390,11 @@ def test_withdraw_stale(token, auction_house_unpaused, deployer, alice, bob):
     assert auction_house_unpaused.pending_returns(alice) == 100
     auction_house_unpaused.withdraw_stale([alice])
     assert auction_house_unpaused.pending_returns(alice) == 0
-    assert alice.balance() == balance_of_alice_before - 5 # Alice gets a 5% penalty
-    assert deployer.balance() == balance_of_deployer_before + 205 # The owner takes 5% of alices pending returns
+    assert alice.balance() == balance_of_alice_before - 5  # Alice gets a 5% penalty
+    assert (
+        deployer.balance() == balance_of_deployer_before + 205
+    )  # The owner takes 5% of alices pending returns
+
 
 def test_withdraw_stale_user_has_no_pending_withdraws(auction_house_unpaused, alice):
     balance_of_alice_before = alice.balance()
