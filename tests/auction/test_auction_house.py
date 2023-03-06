@@ -66,6 +66,11 @@ def test_set_min_bid_increment_percentage(auction_house):
     assert auction_house.min_bid_increment_percentage() == 200
 
 
+def test_set_duration(auction_house):
+    auction_house.set_duration(1337)
+    assert auction_house.duration() == 1337
+
+
 def test_set_wl_signer(auction_house, alice):
     auction_house.set_wl_signer(alice)
     assert auction_house.wl_signer() == alice
@@ -97,6 +102,11 @@ def test_set_reserve_price_not_owner(auction_house, alice):
 def test_set_min_bid_increment_percentage_not_owner(auction_house, alice):
     with brownie.reverts():
         auction_house.set_min_bid_increment_percentage(200, {"from": alice})
+
+
+def test_set_duration_not_owner(auction_house, alice):
+    with brownie.reverts():
+        auction_house.set_duration(1000, {"from": alice})
 
 
 def test_set_wl_signer_now_owner(auction_house, alice):
