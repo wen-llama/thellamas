@@ -267,7 +267,7 @@ def set_duration(_duration: uint256):
     @notice Admin function to set the duration.
     """
 
-    assert msg.sender == self.owner
+    assert msg.sender == self.owner, "Caller is not the owner"
 
     self.duration = _duration
 

@@ -105,11 +105,11 @@ def test_set_min_bid_increment_percentage_not_owner(auction_house, alice):
 
 
 def test_set_duration_not_owner(auction_house, alice):
-    with brownie.reverts():
+    with brownie.reverts("Caller is not the owner"):
         auction_house.set_duration(1000, {"from": alice})
 
 
-def test_set_wl_signer_now_owner(auction_house, alice):
+def test_set_wl_signer_not_owner(auction_house, alice):
     with brownie.reverts():
         auction_house.set_wl_signer(alice, {"from": alice})
 
