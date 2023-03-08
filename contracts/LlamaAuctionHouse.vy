@@ -53,6 +53,10 @@ event AuctionMinBidIncrementPercentageUpdated:
     _min_bid_increment_percentage: uint256
 
 
+event AuctionDurationUpdated:
+    _duration: uint256
+
+
 event AuctionCreated:
     _llama_id: indexed(uint256)
     _start_time: uint256
@@ -255,6 +259,19 @@ def set_min_bid_increment_percentage(_min_bid_increment_percentage: uint256):
     self.min_bid_increment_percentage = _min_bid_increment_percentage
 
     log AuctionMinBidIncrementPercentageUpdated(_min_bid_increment_percentage)
+
+
+@external
+def set_duration(_duration: uint256):
+    """
+    @notice Admin function to set the duration.
+    """
+
+    assert msg.sender == self.owner, "Caller is not the owner"
+
+    self.duration = _duration
+
+    log AuctionDurationUpdated(_duration)
 
 
 @external
