@@ -205,6 +205,7 @@ def withdraw_stale(addresses: DynArray[address, ADMIN_MAX_WITHDRAWALS]):
 
     assert msg.sender == self.owner
 
+    total_fee: uint256 = 0
     for _address in addresses:
         pending_amount: uint256 = self.pending_returns[_address]
         if pending_amount == 0:
@@ -214,7 +215,9 @@ def withdraw_stale(addresses: DynArray[address, ADMIN_MAX_WITHDRAWALS]):
         withdrawer_return: uint256 = pending_amount - fee
         self.pending_returns[_address] = 0
         send(_address, withdrawer_return)
-        send(self.owner, fee)
+        total_fee += fee
+
+    send(self.owner, total_fee)
 
 
 @external

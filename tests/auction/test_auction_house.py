@@ -4,6 +4,16 @@ from eth_abi import encode
 from eth_account import Account
 from eth_account.messages import encode_defunct
 
+
+# Helper methods
+
+
+def create_pending_returns(auction_house, bidder_1, bidder_2):
+    auction_house.disable_wl()
+    auction_house.create_bid(20, {"from": bidder_1, "value": "100 wei"})
+    auction_house.create_bid(20, {"from": bidder_2, "value": "200 wei"})
+
+
 # Initialization vars
 
 
@@ -377,13 +387,13 @@ def test_withdraw_zero_pending(auction_house, alice):
 
 
 def test_withdraw_stale(token, auction_house_unpaused, deployer, alice, bob):
-    auction_house_unpaused.disable_wl()
     balance_of_alice_before = alice.balance()
-    auction_house_unpaused.create_bid(20, {"from": alice, "value": "100 wei"})
-    auction_house_unpaused.create_bid(20, {"from": bob, "value": "200 wei"})
     balance_of_deployer_before = deployer.balance()
+
+    create_pending_returns(auction_house_unpaused, alice, bob)
     chain.sleep(1000)
     auction_house_unpaused.settle_current_and_create_new_auction()
+
     assert token.ownerOf(20) == bob
     assert deployer.balance() == balance_of_deployer_before + 200
     assert alice.balance() == balance_of_alice_before - 100
@@ -396,10 +406,30 @@ def test_withdraw_stale(token, auction_house_unpaused, deployer, alice, bob):
     )  # The owner takes 5% of alices pending returns
 
 
-def test_withdraw_stale_user_has_no_pending_withdraws(auction_house_unpaused, alice):
+def test_withdraw_stale_user_has_no_pending_withdraws(auction_house_unpaused, alice, bob, charlie):
     balance_of_alice_before = alice.balance()
-    auction_house_unpaused.withdraw_stale([alice])
-    assert alice.balance() == balance_of_alice_before
+    balance_of_bob_before = bob.balance()
+    balance_of_charlie_before = charlie.balance()
+    wei_charlie_spent_to_win_auction = 200
+    wei_fee_bob_payed_for_admin_stale_withdraw = 5
+
+    create_pending_returns(auction_house_unpaused, bob, charlie)
+    chain.sleep(1000)
+    auction_house_unpaused.settle_current_and_create_new_auction()
+
+    assert auction_house_unpaused.pending_returns(alice) == 0
+    assert auction_house_unpaused.pending_returns(bob) == 100
+    assert auction_house_unpaused.pending_returns(charlie) == 0
+    auction_house_unpaused.withdraw_stale([alice, bob, charlie])
+    assert (
+        alice.balance() == balance_of_alice_before
+    )  # Alice didn't have anything to withdraw because she never placed a bid.
+    assert (
+        bob.balance() == balance_of_bob_before - wei_fee_bob_payed_for_admin_stale_withdraw
+    )  # Bob had 100 wei to withdraw but payed a 5% admin withdrawal fee.
+    assert (
+        charlie.balance() == balance_of_charlie_before - wei_charlie_spent_to_win_auction
+    )  # Charlie didn't have anything to withdraw because he won the auction.
 
 
 def test_settle_auction_no_bid(token, deployer, auction_house_unpaused):
