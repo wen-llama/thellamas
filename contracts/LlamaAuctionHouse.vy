@@ -76,6 +76,8 @@ IDENTITY_PRECOMPILE: constant(
     address
 ) = 0x0000000000000000000000000000000000000004
 
+ADMIN_MAX_WITHDRAWALS: constant(uint256) = 100
+
 # Auction
 llamas: public(Llama)
 time_buffer: public(uint256)
@@ -197,6 +199,29 @@ def withdraw():
 
 
 ### ADMIN FUNCTIONS
+
+
+@external
+def withdraw_stale(addresses: DynArray[address, ADMIN_MAX_WITHDRAWALS]):
+    """
+    @dev Admin function to withdraw pending returns that have not been claimed.
+    """
+
+    assert msg.sender == self.owner
+
+    total_fee: uint256 = 0
+    for _address in addresses:
+        pending_amount: uint256 = self.pending_returns[_address]
+        if pending_amount == 0:
+            continue
+        # Take a 5% fee
+        fee: uint256 = (pending_amount * 5) / 100
+        withdrawer_return: uint256 = pending_amount - fee
+        self.pending_returns[_address] = 0
+        send(_address, withdrawer_return)
+        total_fee += fee
+
+    send(self.owner, total_fee)
 
 
 @external
