@@ -537,13 +537,13 @@ def contractURI() -> String[128]:
 
 @external
 def set_minter(minter: address):
-    assert msg.sender == self.owner
+    assert msg.sender == self.owner, "Caller is not the owner"
     self.minter = minter
 
 
 @external
 def set_al_signer(al_signer: address):
-    assert msg.sender == self.owner
+    assert msg.sender == self.owner, "Caller is not the owner"
     self.al_signer = al_signer
 
 
@@ -561,7 +561,9 @@ def set_base_uri(base_uri: String[128]):
     @param base_uri New URI for the token
 
     """
-    assert msg.sender == self.owner  # dev: Only Admin
+    assert (
+        msg.sender == self.owner
+    ), "Caller is not the owner"  # dev: Only Admin
     self.base_uri = base_uri
 
 
@@ -572,7 +574,9 @@ def set_contract_uri(new_uri: String[66]):
     @param new_uri New URI for the contract
     """
 
-    assert msg.sender == self.owner  # dev: Only Admin
+    assert (
+        msg.sender == self.owner
+    ), "Caller is not the owner"  # dev: Only Admin
     self.contract_uri = new_uri
 
 
@@ -583,7 +587,9 @@ def set_owner(new_addr: address):
     @param new_addr The new owner address to take over immediately
     """
 
-    assert msg.sender == self.owner  # dev: Only Owner
+    assert (
+        msg.sender == self.owner
+    ), "Caller is not the owner"  # dev: Only Owner
     self.owner = new_addr
 
 
@@ -593,14 +599,18 @@ def set_revealed(flag: bool):
     @notice Admin function to reveal collection.  If not revealed, all NFTs show default_uri
     @param flag Boolean, True to reveal, False to conceal
     """
-    assert msg.sender == self.owner  # dev: Only Owner
+    assert (
+        msg.sender == self.owner
+    ), "Caller is not the owner"  # dev: Only Owner
 
     self.revealed = flag
 
 
 @external
 def withdraw():
-    assert self.owner == msg.sender  # dev: "Admin Only"
+    assert (
+        msg.sender == self.owner
+    ), "Caller is not the owner"  # dev: "Admin Only"
 
     send(self.owner, self.balance)
 
@@ -613,13 +623,17 @@ def admin_withdraw_erc20(coin: address, target: address, amount: uint256):
     @param target Address to receive
     @param amount Wei
     """
-    assert self.owner == msg.sender  # dev: "Admin Only"
+    assert (
+        msg.sender == self.owner
+    ), "Caller is not the owner"  # dev: "Admin Only"
     ERC20(coin).transfer(target, amount)
 
 
 @external
 def start_al_mint():
-    assert self.owner == msg.sender  # dev: "Admin Only"
+    assert (
+        msg.sender == self.owner
+    ), "Caller is not the owner"  # dev: "Admin Only"
     self.al_mint_started = True
 
 

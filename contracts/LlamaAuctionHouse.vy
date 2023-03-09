@@ -207,7 +207,7 @@ def withdraw_stale(addresses: DynArray[address, ADMIN_MAX_WITHDRAWALS]):
     @dev Admin function to withdraw pending returns that have not been claimed.
     """
 
-    assert msg.sender == self.owner
+    assert msg.sender == self.owner, "Caller is not the owner"
 
     total_fee: uint256 = 0
     for _address in addresses:
@@ -230,7 +230,7 @@ def pause():
     @notice Admin function to pause to auction house.
     """
 
-    assert msg.sender == self.owner
+    assert msg.sender == self.owner, "Caller is not the owner"
     self._pause()
 
 
@@ -240,7 +240,7 @@ def unpause():
     @notice Admin function to unpause to auction house.
     """
 
-    assert msg.sender == self.owner
+    assert msg.sender == self.owner, "Caller is not the owner"
     self._unpause()
 
     if self.auction.start_time == 0 or self.auction.settled:
@@ -253,7 +253,7 @@ def set_time_buffer(_time_buffer: uint256):
     @notice Admin function to set the time buffer.
     """
 
-    assert msg.sender == self.owner
+    assert msg.sender == self.owner, "Caller is not the owner"
 
     self.time_buffer = _time_buffer
 
@@ -266,7 +266,7 @@ def set_reserve_price(_reserve_price: uint256):
     @notice Admin function to set the reserve price.
     """
 
-    assert msg.sender == self.owner
+    assert msg.sender == self.owner, "Caller is not the owner"
 
     self.reserve_price = _reserve_price
 
@@ -279,7 +279,7 @@ def set_min_bid_increment_percentage(_min_bid_increment_percentage: uint256):
     @notice Admin function to set the min bid increment percentage.
     """
 
-    assert msg.sender == self.owner
+    assert msg.sender == self.owner, "Caller is not the owner"
 
     self.min_bid_increment_percentage = _min_bid_increment_percentage
 
@@ -305,7 +305,7 @@ def set_owner(_owner: address):
     @notice Admin function to set the owner
     """
 
-    assert msg.sender == self.owner
+    assert msg.sender == self.owner, "Caller is not the owner"
 
     self.owner = _owner
 
@@ -316,7 +316,7 @@ def enable_wl():
     @notice Admin function to enable the whitelist.
     """
 
-    assert msg.sender == self.owner
+    assert msg.sender == self.owner, "Caller is not the owner"
 
     self.wl_enabled = True
 
@@ -327,7 +327,7 @@ def disable_wl():
     @notice Admin function to disable the whitelist.
     """
 
-    assert msg.sender == self.owner
+    assert msg.sender == self.owner, "Caller is not the owner"
 
     self.wl_enabled = False
 
@@ -338,7 +338,7 @@ def set_wl_signer(_wl_signer: address):
     @notice Admin function to set the whitelist signer.
     """
 
-    assert msg.sender == self.owner
+    assert msg.sender == self.owner, "Caller is not the owner"
 
     self.wl_signer = _wl_signer
 
