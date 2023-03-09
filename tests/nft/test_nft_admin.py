@@ -50,20 +50,20 @@ def test_rando_cannot_set_revealed(token, alice):
 
 @pytest.mark.skip()
 def test_admin_can_withdraw_erc20(token, alice, erc20, deployer):
-    erc20.mint(token, 10 ** 18, {"from": deployer})
+    erc20.mint(token, 10**18, {"from": deployer})
     assert erc20.balanceOf(alice) == 0
-    assert erc20.balanceOf(token) == 10 ** 18
+    assert erc20.balanceOf(token) == 10**18
 
     token.admin_withdraw_erc20(erc20, alice, erc20.balanceOf(token), {"from": deployer})
-    assert erc20.balanceOf(alice) == 10 ** 18
+    assert erc20.balanceOf(alice) == 10**18
     assert erc20.balanceOf(token) == 0
 
 
 @pytest.mark.skip()
 def test_rando_cannot_withdraw_erc20(alice, token, erc20, deployer):
-    erc20.mint(token, 10 ** 18, {"from": deployer})
+    erc20.mint(token, 10**18, {"from": deployer})
     assert erc20.balanceOf(alice) == 0
-    assert erc20.balanceOf(token) == 10 ** 18
+    assert erc20.balanceOf(token) == 10**18
     assert erc20.owner() != alice
     assert erc20.minter() != alice
     with brownie.reverts("Caller is not the owner"):
