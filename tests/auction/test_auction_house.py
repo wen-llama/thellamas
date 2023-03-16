@@ -103,22 +103,22 @@ def test_pause_unpause(auction_house_unpaused, minted_token_id):
 
 
 def test_set_owner_not_owner(auction_house, alice):
-    with brownie.reverts():
+    with brownie.reverts("Caller is not the owner"):
         auction_house.set_owner(alice, {"from": alice})
 
 
 def test_set_time_buffer_not_owner(auction_house, alice):
-    with brownie.reverts():
+    with brownie.reverts("Caller is not the owner"):
         auction_house.set_time_buffer(200, {"from": alice})
 
 
 def test_set_reserve_price_not_owner(auction_house, alice):
-    with brownie.reverts():
+    with brownie.reverts("Caller is not the owner"):
         auction_house.set_reserve_price(200, {"from": alice})
 
 
 def test_set_min_bid_increment_percentage_not_owner(auction_house, alice):
-    with brownie.reverts():
+    with brownie.reverts("Caller is not the owner"):
         auction_house.set_min_bid_increment_percentage(200, {"from": alice})
 
 
@@ -128,22 +128,22 @@ def test_set_duration_not_owner(auction_house, alice):
 
 
 def test_set_wl_signer_not_owner(auction_house, alice):
-    with brownie.reverts():
+    with brownie.reverts("Caller is not the owner"):
         auction_house.set_wl_signer(alice, {"from": alice})
 
 
 def test_pause_not_owner(auction_house, alice):
-    with brownie.reverts():
+    with brownie.reverts("Caller is not the owner"):
         auction_house.pause({"from": alice})
 
 
 def test_unpause_not_owner(auction_house, alice):
-    with brownie.reverts():
+    with brownie.reverts("Caller is not the owner"):
         auction_house.unpause({"from": alice})
 
 
 def test_withdraw_stale_not_owner(auction_house, alice):
-    with brownie.reverts():
+    with brownie.reverts("Caller is not the owner"):
         auction_house.withdraw_stale([alice, alice], {"from": alice})
 
 
