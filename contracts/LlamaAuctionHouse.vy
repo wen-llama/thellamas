@@ -163,7 +163,7 @@ def create_wl_bid(llama_id: uint256, sig: Bytes[65]):
     """
 
     assert self.wl_enabled == True, "WL auction is not enabled"
-    assert self.check_wl_signature(sig, msg.sender), "Signature is invalid"
+    assert self._check_wl_signature(sig, msg.sender), "Signature is invalid"
     assert self.wl_auctions_won[msg.sender] < 2, "Already won 2 WL auctions"
 
     self._create_bid(llama_id, msg.value, msg.sender)
@@ -428,7 +428,7 @@ def _unpause():
 
 @internal
 @view
-def check_wl_signature(sig: Bytes[65], sender: address) -> bool:
+def _check_wl_signature(sig: Bytes[65], sender: address) -> bool:
     r: uint256 = convert(slice(sig, 0, 32), uint256)
     s: uint256 = convert(slice(sig, 32, 32), uint256)
     v: uint256 = convert(slice(sig, 64, 1), uint256)
