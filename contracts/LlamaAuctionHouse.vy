@@ -69,6 +69,11 @@ event AuctionSettled:
     _amount: uint256
 
 
+event Withdraw:
+    _withdrawer: indexed(address)
+    _amount: uint256
+
+
 # Technically vyper doesn't need this as it is automatic
 # in all recent vyper versions, but Etherscan verification
 # will bork without it.
@@ -196,6 +201,8 @@ def withdraw():
     pending_amount: uint256 = self.pending_returns[msg.sender]
     self.pending_returns[msg.sender] = 0
     send(msg.sender, pending_amount)
+
+    log Withdraw(msg.sender, pending_amount)
 
 
 ### ADMIN FUNCTIONS
