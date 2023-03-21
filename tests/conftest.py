@@ -67,7 +67,7 @@ def al_minted(token, alice, deployer):
     alice_signable_message = encode_defunct(alice_hashed)
     signed_message = Account.sign_message(alice_signable_message, deployer.private_key)
     token.allowlistMint(
-        1, signed_message.signature, {"from": alice, "value": web3.toWei(0.01, "ether")}
+        1, 1, signed_message.signature, {"from": alice, "value": web3.toWei(0.1, "ether")}
     )
 
     return token

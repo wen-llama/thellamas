@@ -1,6 +1,6 @@
 # @version 0.3.7
 
-# @notice Just a basic ERC721, nothing fancy except for whitelist and bulk minting functionality.
+# @notice Just a basic ERC721, nothing fancy except for allowlist and bulk minting functionality.
 # @dev This would be equivalent to GBC.sol No extra functionality such as tracking how long an NFT has been held, distributing rewards, or tracking how many times someone has locked, that would all be handled off chain.  Modified from https://github.com/npc-ers/current-thing
 # @author The Llamas
 # @license MIT
@@ -110,12 +110,12 @@ default_uri: public(String[150])
 MAX_SUPPLY: constant(uint256) = 1111
 MAX_PREMINT: constant(uint256) = 20
 MAX_MINT_PER_TX: constant(uint256) = 3
-COST: constant(uint256) = as_wei_value(0.01, "ether")
+COST: constant(uint256) = as_wei_value(0.1, "ether")
 
 al_mint_started: public(bool)
 al_signer: public(address)
 minter: public(address)
-al_blocklist: HashMap[address, bool]
+al_mint_amount: public(HashMap[address, uint256])
 
 
 @external
@@ -454,7 +454,7 @@ def setApprovalForAll(operator: address, approved: bool):
 
 @external
 @payable
-def allowlistMint(mint_amount: uint256, sig: Bytes[65]):
+def allowlistMint(mint_amount: uint256, approved_amount: uint256, sig: Bytes[65]):
     """
     @notice Function to mint a token for allowlisted users
     """
@@ -463,11 +463,11 @@ def allowlistMint(mint_amount: uint256, sig: Bytes[65]):
     assert self.al_mint_started == True, "AL Mint not started yet"
     assert mint_amount <= MAX_MINT_PER_TX, "Transaction exceeds max mint amount"
     assert (
-        self.checkAlSignature(sig, msg.sender, mint_amount) == True
+        self.checkAlSignature(sig, msg.sender, approved_amount) == True
     ), "Signature is not valid"
     assert (
-        self.al_blocklist[msg.sender] == False
-    ), "The allowlisted address was already used"
+        (self.al_mint_amount[msg.sender] + mint_amount) <= approved_amount
+    ), "Cannot mint over approved amount"
     assert msg.value >= COST * mint_amount, "Not enough ether provided"
 
     for i in range(MAX_MINT_PER_TX):
@@ -481,7 +481,7 @@ def allowlistMint(mint_amount: uint256, sig: Bytes[65]):
 
         log Transfer(empty(address), msg.sender, token_id)
 
-    self.al_blocklist[msg.sender] = True
+    self.al_mint_amount[msg.sender] += mint_amount
 
 
 @external
@@ -545,12 +545,6 @@ def set_minter(minter: address):
 def set_al_signer(al_signer: address):
     assert msg.sender == self.owner, "Caller is not the owner"
     self.al_signer = al_signer
-
-
-@external
-@view
-def is_al_blocklisted(_address: address) -> bool:
-    return self.al_blocklist[_address]
 
 
 @external
@@ -690,7 +684,7 @@ def tokensForOwner(owner: address) -> DynArray[uint256, MAX_SUPPLY]:
 @internal
 @view
 def checkAlSignature(
-    sig: Bytes[65], sender: address, mint_amount: uint256
+    sig: Bytes[65], sender: address, approved_amount: uint256
 ) -> bool:
     r: uint256 = convert(slice(sig, 0, 32), uint256)
     s: uint256 = convert(slice(sig, 32, 32), uint256)
@@ -698,7 +692,7 @@ def checkAlSignature(
     ethSignedHash: bytes32 = keccak256(
         concat(
             b"\x19Ethereum Signed Message:\n32",
-            keccak256(_abi_encode("allowlist:", sender, mint_amount)),
+            keccak256(_abi_encode("allowlist:", sender, approved_amount)),
         )
     )
 
