@@ -159,7 +159,7 @@ def settle_auction():
 @external
 @payable
 @nonreentrant("lock")
-def create_wl_bid(llama_id: uint256, sig: Bytes[65]):
+def create_wl_bid(llama_id: uint256, bid_amount: uint256, sig: Bytes[65]):
     """
     @dev Create a bid.
       Throws if the whitelist is not enabled.
@@ -170,22 +170,24 @@ def create_wl_bid(llama_id: uint256, sig: Bytes[65]):
     assert self.wl_enabled == True, "WL auction is not enabled"
     assert self._check_wl_signature(sig, msg.sender), "Signature is invalid"
     assert self.wl_auctions_won[msg.sender] < 2, "Already won 2 WL auctions"
+    self._check_sent_amount(msg.value, bid_amount)
 
-    self._create_bid(llama_id, msg.value, msg.sender)
+    self._create_bid(llama_id, bid_amount, msg.sender)
 
 
 @external
 @payable
 @nonreentrant("lock")
-def create_bid(llama_id: uint256):
+def create_bid(llama_id: uint256, bid_amount: uint256):
     """
     @dev Create a bid.
       Throws if the whitelist is enabled.
     """
 
     assert self.wl_enabled == False, "Public auction is not enabled"
+    self._check_sent_amount(msg.value, bid_amount)
 
-    self._create_bid(llama_id, msg.value, msg.sender)
+    self._create_bid(llama_id, bid_amount, msg.sender)
 
 
 ### WITHDRAW ###
@@ -431,6 +433,17 @@ def _pause():
 @internal
 def _unpause():
     self.paused = False
+
+
+@internal
+def _check_sent_amount(sent_amount: uint256, bid_amount: uint256):
+    if sent_amount < bid_amount:
+        missing_amount: uint256 = bid_amount - sent_amount
+        # Try to use the users pending returns
+        if self.pending_returns[msg.sender] >= missing_amount:
+            self.pending_returns[msg.sender] -= missing_amount
+        else:
+            raise "Does not have enough pending returns to cover remainder"
 
 
 @internal
