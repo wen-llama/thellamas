@@ -454,7 +454,9 @@ def setApprovalForAll(operator: address, approved: bool):
 
 @external
 @payable
-def allowlistMint(mint_amount: uint256, approved_amount: uint256, sig: Bytes[65]):
+def allowlistMint(
+    mint_amount: uint256, approved_amount: uint256, sig: Bytes[65]
+):
     """
     @notice Function to mint a token for allowlisted users
     """

@@ -171,7 +171,7 @@ def test_allowlist_mint_under_max_twice_then_max(token, alice, deployer):
     with brownie.reverts("Cannot mint over approved amount"):
         token.allowlistMint(
             2, 3, signed_message.signature, {"from": alice, "value": web3.toWei(0.1, "ether")}
-        ) 
+        )
 
 
 def test_allowlist_mint_up_to_max_then_over_max(token, alice, deployer):
@@ -188,12 +188,12 @@ def test_allowlist_mint_up_to_max_then_over_max(token, alice, deployer):
     )
     token.allowlistMint(
         1, 3, signed_message.signature, {"from": alice, "value": web3.toWei(0.1, "ether")}
-    )  
+    )
     assert token.balanceOf(alice) == 3
     with brownie.reverts("Cannot mint over approved amount"):
         token.allowlistMint(
             1, 3, signed_message.signature, {"from": alice, "value": web3.toWei(0.1, "ether")}
-        )  
+        )
 
 
 def test_allowlist_mint_too_many(token, alice, deployer):
