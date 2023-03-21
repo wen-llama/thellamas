@@ -401,10 +401,8 @@ def _create_bid(llama_id: uint256, amount: uint256):
     if msg.value < amount:
         missing_amount: uint256 = amount - msg.value
         # Try to use the users pending returns
-        if self.pending_returns[msg.sender] >= missing_amount:
-            self.pending_returns[msg.sender] -= missing_amount
-        else:
-            raise "Does not have enough pending returns to cover remainder"
+        assert self.pending_returns[msg.sender] >= missing_amount, "Does not have enough pending returns to cover remainder"
+        self.pending_returns[msg.sender] -= missing_amount
     assert self.auction.llama_id == llama_id, "Llama not up for auction"
     assert block.timestamp < self.auction.end_time, "Auction expired"
     assert amount >= self.reserve_price, "Must send at least reservePrice"
