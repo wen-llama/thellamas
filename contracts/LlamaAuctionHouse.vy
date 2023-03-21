@@ -170,9 +170,8 @@ def create_wl_bid(llama_id: uint256, bid_amount: uint256, sig: Bytes[65]):
     assert self.wl_enabled == True, "WL auction is not enabled"
     assert self._check_wl_signature(sig, msg.sender), "Signature is invalid"
     assert self.wl_auctions_won[msg.sender] < 2, "Already won 2 WL auctions"
-    self._check_sent_amount(msg.value, bid_amount)
 
-    self._create_bid(llama_id, bid_amount, msg.sender)
+    self._create_bid(llama_id, bid_amount)
 
 
 @external
@@ -185,9 +184,8 @@ def create_bid(llama_id: uint256, bid_amount: uint256):
     """
 
     assert self.wl_enabled == False, "Public auction is not enabled"
-    self._check_sent_amount(msg.value, bid_amount)
 
-    self._create_bid(llama_id, bid_amount, msg.sender)
+    self._create_bid(llama_id, bid_amount)
 
 
 ### WITHDRAW ###
@@ -398,7 +396,15 @@ def _settle_auction():
 
 
 @internal
-def _create_bid(llama_id: uint256, amount: uint256, bidder: address):
+@payable
+def _create_bid(llama_id: uint256, amount: uint256):
+    if msg.value < amount:
+        missing_amount: uint256 = amount - msg.value
+        # Try to use the users pending returns
+        if self.pending_returns[msg.sender] >= missing_amount:
+            self.pending_returns[msg.sender] -= missing_amount
+        else:
+            raise "Does not have enough pending returns to cover remainder"
     assert self.auction.llama_id == llama_id, "Llama not up for auction"
     assert block.timestamp < self.auction.end_time, "Auction expired"
     assert amount >= self.reserve_price, "Must send at least reservePrice"
@@ -412,14 +418,14 @@ def _create_bid(llama_id: uint256, amount: uint256, bidder: address):
         self.pending_returns[last_bidder] += self.auction.amount
 
     self.auction.amount = amount
-    self.auction.bidder = bidder
+    self.auction.bidder = msg.sender
 
     extended: bool = self.auction.end_time - block.timestamp < self.time_buffer
 
     if extended:
         self.auction.end_time = block.timestamp + self.time_buffer
 
-    log AuctionBid(self.auction.llama_id, bidder, amount, extended)
+    log AuctionBid(self.auction.llama_id, msg.sender, amount, extended)
 
     if extended:
         log AuctionExtended(self.auction.llama_id, self.auction.end_time)
@@ -433,17 +439,6 @@ def _pause():
 @internal
 def _unpause():
     self.paused = False
-
-
-@internal
-def _check_sent_amount(sent_amount: uint256, bid_amount: uint256):
-    if sent_amount < bid_amount:
-        missing_amount: uint256 = bid_amount - sent_amount
-        # Try to use the users pending returns
-        if self.pending_returns[msg.sender] >= missing_amount:
-            self.pending_returns[msg.sender] -= missing_amount
-        else:
-            raise "Does not have enough pending returns to cover remainder"
 
 
 @internal
