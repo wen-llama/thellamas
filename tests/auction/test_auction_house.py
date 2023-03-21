@@ -351,8 +351,6 @@ def test_create_wl_bid_using_pending_returns(token, auction_house_unpaused, alic
     assert auction_4["amount"] == 1000
     assert auction_house_unpaused.pending_returns(alice) == 300
 
- 
-
 
 # Public Bidding
 
@@ -441,7 +439,9 @@ def test_create_bid_using_pending_returns(token, auction_house_unpaused, alice, 
     assert token.ownerOf(20) == alice
 
 
-def test_create_bid_using_pending_returns_from_previous_auction(token, auction_house_unpaused, alice, bob):
+def test_create_bid_using_pending_returns_from_previous_auction(
+    token, auction_house_unpaused, alice, bob
+):
     auction_house_unpaused.disable_wl()
     auction_house_unpaused.create_bid(20, 100, {"from": alice, "value": "100 wei"})
     bid_before = auction_house_unpaused.auction()
@@ -493,7 +493,6 @@ def test_create_bid_using_pending_returns_outbid(token, auction_house_unpaused, 
     auction_2 = auction_house_unpaused.auction()
     assert auction_2["bidder"] == bob
     assert auction_2["amount"] == 200
-
 
 
 def test_create_bid_using_pending_returns_not_enough(auction_house_unpaused, alice, bob):
