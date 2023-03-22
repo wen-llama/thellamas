@@ -158,7 +158,7 @@ def test_allowlist_mint_address_already_minted_max_amount(token, alice, deployer
 
 def test_allowlist_mint_under_max_twice_then_max(token, alice, deployer):
     token.start_al_mint()
-    signed_message = signAllowlistMint(deployer, alice, 3) 
+    signed_message = signAllowlistMint(deployer, alice, 3)
     token.allowlistMint(
         1, 3, signed_message.signature, {"from": alice, "value": web3.toWei(0.1, "ether")}
     )
@@ -178,7 +178,7 @@ def test_allowlist_mint_under_max_twice_then_max(token, alice, deployer):
 
 def test_allowlist_mint_up_to_max_then_over_max(token, alice, deployer):
     token.start_al_mint()
-    signed_message = signAllowlistMint(deployer, alice, 3) 
+    signed_message = signAllowlistMint(deployer, alice, 3)
     token.allowlistMint(
         1, 3, signed_message.signature, {"from": alice, "value": web3.toWei(0.1, "ether")}
     )
@@ -197,7 +197,7 @@ def test_allowlist_mint_up_to_max_then_over_max(token, alice, deployer):
 
 def test_allowlist_mint_too_many(token, alice, deployer):
     token.start_al_mint()
-    signed_message = signAllowlistMint(deployer, alice, 3) 
+    signed_message = signAllowlistMint(deployer, alice, 3)
     with brownie.reverts("Transaction exceeds max mint amount"):
         token.allowlistMint(
             4, 3, signed_message.signature, {"from": alice, "value": web3.toWei(0.4, "ether")}
@@ -206,36 +206,37 @@ def test_allowlist_mint_too_many(token, alice, deployer):
 
 def test_allowlist_mint_one_not_enough_value(token, alice, deployer):
     token.start_al_mint()
-    signed_message = signAllowlistMint(deployer, alice, 1) 
+    signed_message = signAllowlistMint(deployer, alice, 1)
     with brownie.reverts("Not enough ether provided"):
         token.allowlistMint(
             1, 1, signed_message.signature, {"from": alice, "value": web3.toWei(0.09, "ether")}
         )
 
+
 def test_allowlist_mint_two_not_enough_value(token, alice, deployer):
     token.start_al_mint()
-    signed_message = signAllowlistMint(deployer, alice, 2) 
+    signed_message = signAllowlistMint(deployer, alice, 2)
     with brownie.reverts("Not enough ether provided"):
         token.allowlistMint(
             2, 2, signed_message.signature, {"from": alice, "value": web3.toWei(0.19, "ether")}
-        ) 
+        )
 
 
 def test_allowlist_mint_not_approved_max_amount(token, alice, deployer):
     token.start_al_mint()
-    signed_message = signAllowlistMint(deployer, alice, 1) 
+    signed_message = signAllowlistMint(deployer, alice, 1)
     with brownie.reverts("Signature is not valid"):
         token.allowlistMint(
             3, 3, signed_message.signature, {"from": alice, "value": web3.toWei(0.3, "ether")}
         )
 
+
 def test_allowlist_mint_invalid_signature(token, alice):
     token.start_al_mint()
     signature = "0xabcd"
     with brownie.reverts():
-        token.allowlistMint(
-            3, 3, signature, {"from": alice, "value": web3.toWei(0.3, "ether")}
-        )
+        token.allowlistMint(3, 3, signature, {"from": alice, "value": web3.toWei(0.3, "ether")})
+
 
 def test_allowlist_mint_zero_tokens_does_nothing(token, alice, deployer):
     token.start_al_mint()
