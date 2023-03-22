@@ -102,13 +102,13 @@ def tokenReceiver(deployer):
 
 @pytest.fixture(scope="function")
 def auction_house(LlamaAuctionHouse, token, deployer):
-    auction_house = LlamaAuctionHouse.deploy(token, 100, 100, 100, 100, {"from": deployer})
+    auction_house = LlamaAuctionHouse.deploy(token, 100, 100, 5, 100, {"from": deployer})
     return auction_house
 
 
 @pytest.fixture(scope="function")
 def auction_house_unpaused(LlamaAuctionHouse, token, deployer):
-    auction_house = LlamaAuctionHouse.deploy(token, 100, 100, 100, 100, {"from": deployer})
+    auction_house = LlamaAuctionHouse.deploy(token, 100, 100, 5, 100, {"from": deployer})
     token.set_minter(auction_house)
     auction_house.unpause()
     return auction_house
