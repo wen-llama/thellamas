@@ -287,7 +287,10 @@ def set_min_bid_increment_percentage(_min_bid_increment_percentage: uint256):
     """
 
     assert msg.sender == self.owner, "Caller is not the owner"
-    assert _min_bid_increment_percentage >= 2 and _min_bid_increment_percentage <= 15, "_min_bid_increment_percentage out of range"
+    assert (
+        _min_bid_increment_percentage >= 2
+        and _min_bid_increment_percentage <= 15
+    ), "_min_bid_increment_percentage out of range"
 
     self.min_bid_increment_percentage = _min_bid_increment_percentage
 
