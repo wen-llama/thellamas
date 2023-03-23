@@ -105,7 +105,7 @@ def test_set_duration_above_range(auction_house):
     assert auction_house.duration() == 100
 
 
-def test_set_duration_above_range(auction_house):
+def test_set_duration_below_range(auction_house):
     with brownie.reverts("_duration out of range"):
         auction_house.set_duration(3599)
     assert auction_house.duration() == 100
