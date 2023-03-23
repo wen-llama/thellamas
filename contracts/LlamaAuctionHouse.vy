@@ -287,6 +287,7 @@ def set_min_bid_increment_percentage(_min_bid_increment_percentage: uint256):
     """
 
     assert msg.sender == self.owner, "Caller is not the owner"
+    assert _min_bid_increment_percentage >= 2 and _min_bid_increment_percentage <= 15, "_min_bid_increment_percentage out of range"
 
     self.min_bid_increment_percentage = _min_bid_increment_percentage
 
@@ -300,6 +301,7 @@ def set_duration(_duration: uint256):
     """
 
     assert msg.sender == self.owner, "Caller is not the owner"
+    assert _duration >= 3600 and _duration <= 259200, "_duration out of range"
 
     self.duration = _duration
 
@@ -313,6 +315,7 @@ def set_owner(_owner: address):
     """
 
     assert msg.sender == self.owner, "Caller is not the owner"
+    assert _owner != empty(address), "Cannot set owner to zero address"
 
     self.owner = _owner
 

@@ -1,5 +1,5 @@
 import brownie
-from brownie import chain, web3
+from brownie import chain, web3, ZERO_ADDRESS
 from eth_abi import encode
 from eth_account import Account
 from eth_account.messages import encode_defunct
@@ -56,9 +56,15 @@ def test_wl_signer(auction_house, deployer):
 # Owner control
 
 
-def test_set_owner(auction_house, deployer, alice):
+def test_set_owner(auction_house, alice):
     auction_house.set_owner(alice)
     assert auction_house.owner() == alice
+
+
+def test_set_owner_zero_address(auction_house, deployer):
+    with brownie.reverts("Cannot set owner to zero address"):
+        auction_house.set_owner(ZERO_ADDRESS)
+    assert auction_house.owner() == deployer
 
 
 def test_set_time_buffer(auction_house):
@@ -72,13 +78,37 @@ def test_set_reserve_price(auction_house):
 
 
 def test_set_min_bid_increment_percentage(auction_house):
-    auction_house.set_min_bid_increment_percentage(200)
-    assert auction_house.min_bid_increment_percentage() == 200
+    auction_house.set_min_bid_increment_percentage(15)
+    assert auction_house.min_bid_increment_percentage() == 15
+
+
+def test_set_min_bid_increment_percentage_above_range(auction_house):
+    with brownie.reverts("_min_bid_increment_percentage out of range"):
+        auction_house.set_min_bid_increment_percentage(16)
+    assert auction_house.min_bid_increment_percentage() == 5
+
+
+def test_set_min_bid_increment_percentage_below_range(auction_house):
+    with brownie.reverts("_min_bid_increment_percentage out of range"):
+        auction_house.set_min_bid_increment_percentage(1)
+    assert auction_house.min_bid_increment_percentage() == 5
 
 
 def test_set_duration(auction_house):
-    auction_house.set_duration(1337)
-    assert auction_house.duration() == 1337
+    auction_house.set_duration(3600)
+    assert auction_house.duration() == 3600
+
+
+def test_set_duration_above_range(auction_house):
+    with brownie.reverts("_duration out of range"):
+        auction_house.set_duration(260000)
+    assert auction_house.duration() == 100
+
+
+def test_set_duration_above_range(auction_house):
+    with brownie.reverts("_duration out of range"):
+        auction_house.set_duration(3599)
+    assert auction_house.duration() == 100
 
 
 def test_set_wl_signer(auction_house, alice):
