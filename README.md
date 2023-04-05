@@ -42,6 +42,8 @@ To run all of the project's unit tests:
 brownie test
 ```
 
+You can use the `--gas` flag to estimate gas usage
+
 ### Linting
 These same commands are run in our CI so make sure to run them locally before pushing or the checks might fail. 
 
