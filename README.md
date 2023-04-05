@@ -30,6 +30,7 @@ The brownie config requies a `.env` file to exist.
 Run `touch .env` to create one, you can leave it blank.
 
 ## Setting up ganache
+Ganache is needed for testing
 
 Make sure to install ganache globally with `npm install -g ganache@7.0.2`
 
