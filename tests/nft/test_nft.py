@@ -99,6 +99,14 @@ def test_balanceOf_nonzero_address(token):
     assert 0 == balance
 
 
+def test_stop_al_mint(token):
+    assert token.al_mint_started() == False
+    token.start_al_mint()
+    assert token.al_mint_started() == True
+    token.stop_al_mint()
+    assert token.al_mint_started() == False
+
+
 #
 # Mint a token - this also tests balanceOf and
 # ownerOf
@@ -138,7 +146,7 @@ def test_allowlist_mint_max(token, alice, deployer):
 
 def test_allowlist_mint_not_started(token, alice, deployer):
     signed_message = signAllowlistMint(deployer, alice, 1)
-    with brownie.reverts("AL Mint not started yet"):
+    with brownie.reverts("AL Mint not active"):
         token.allowlistMint(
             1, 1, signed_message.signature, {"from": alice, "value": web3.toWei(0.1, "ether")}
         )

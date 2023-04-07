@@ -462,7 +462,7 @@ def allowlistMint(
     """
 
     # Checks
-    assert self.al_mint_started == True, "AL Mint not started yet"
+    assert self.al_mint_started == True, "AL Mint not active"
     assert mint_amount <= MAX_MINT_PER_TX, "Transaction exceeds max mint amount"
     assert (
         self.checkAlSignature(sig, msg.sender, approved_amount) == True
@@ -631,6 +631,14 @@ def start_al_mint():
         msg.sender == self.owner
     ), "Caller is not the owner"  # dev: "Admin Only"
     self.al_mint_started = True
+
+
+@external
+def stop_al_mint():
+    assert (
+        msg.sender == self.owner
+    ), "Caller is not the owner"  # dev: "Admin Only"
+    self.al_mint_started = False
 
 
 ## ERC-721 Enumerable Functions
