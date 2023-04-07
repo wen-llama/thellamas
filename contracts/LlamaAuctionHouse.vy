@@ -394,17 +394,13 @@ def _settle_auction(auction_index: uint256):
     if auction.bidder == empty(address):
         self.llamas.transferFrom(self, self.owner, auction.llama_id)
     else:
-        self.llamas.transferFrom(
-            self, auction.bidder, auction.llama_id
-        )
+        self.llamas.transferFrom(self, auction.bidder, auction.llama_id)
         if self.wl_enabled:
             self.wl_auctions_won[auction.bidder] += 1
     if auction.amount > 0:
         send(self.owner, auction.amount)
 
-    log AuctionSettled(
-        auction.llama_id, auction.bidder, auction.amount
-    )
+    log AuctionSettled(auction.llama_id, auction.bidder, auction.amount)
 
 
 @internal

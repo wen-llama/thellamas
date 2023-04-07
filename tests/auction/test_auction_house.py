@@ -204,7 +204,7 @@ def test_create_wl_bid_last_auction_index(auction_house_unpaused, alice, deploye
     )
     current_auction = auction_house_unpaused.auctions(19)
     assert current_auction["bidder"] == alice
-    assert current_auction["amount"] == 100 
+    assert current_auction["amount"] == 100
 
 
 def test_create_bid_wl_enabled(auction_house_unpaused, alice):
