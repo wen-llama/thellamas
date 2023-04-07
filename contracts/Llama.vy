@@ -633,6 +633,14 @@ def start_al_mint():
     self.al_mint_started = True
 
 
+@external
+def stop_al_mint():
+    assert (
+        msg.sender == self.owner
+    ), "Caller is not the owner"  # dev: "Admin Only"
+    self.al_mint_started = False
+
+
 ## ERC-721 Enumerable Functions
 
 

@@ -82,6 +82,7 @@ IDENTITY_PRECOMPILE: constant(
 ) = 0x0000000000000000000000000000000000000004
 
 ADMIN_MAX_WITHDRAWALS: constant(uint256) = 100
+MAX_CONCURRENT_AUCTIONS: constant(uint256) = 20
 
 # Auction
 llamas: public(Llama)
@@ -89,7 +90,7 @@ time_buffer: public(uint256)
 reserve_price: public(uint256)
 min_bid_increment_percentage: public(uint256)
 duration: public(uint256)
-auction: public(Auction)
+auctions: public(Auction[MAX_CONCURRENT_AUCTIONS])
 pending_returns: public(HashMap[address, uint256])
 
 # WL Auction
@@ -121,6 +122,7 @@ def __init__(
     self.paused = True
     self.wl_enabled = True
     self.wl_signer = msg.sender
+    self.auctions = empty(Auction[MAX_CONCURRENT_AUCTIONS])
 
 
 ### AUCTION CREATION/SETTLEMENT ###
@@ -128,7 +130,7 @@ def __init__(
 
 @external
 @nonreentrant("lock")
-def settle_current_and_create_new_auction():
+def settle_current_and_create_new_auction(auction_index: uint256):
     """
     @dev Settle the current auction and start a new one.
       Throws if the auction house is paused.
@@ -136,21 +138,22 @@ def settle_current_and_create_new_auction():
 
     assert self.paused == False, "Auction house is paused"
 
-    self._settle_auction()
-    self._create_auction()
+    self._settle_auction(auction_index)
+    self._create_auction(auction_index)
 
 
 @external
 @nonreentrant("lock")
-def settle_auction():
+def settle_auction(auction_index: uint256):
     """
     @dev Settle the current auction.
       Throws if the auction house is not paused.
     """
 
     assert self.paused == True, "Auction house is not paused"
+    assert auction_index < MAX_CONCURRENT_AUCTIONS, "Auction index is invalid"
 
-    self._settle_auction()
+    self._settle_auction(auction_index)
 
 
 ### BIDDING ###
@@ -159,7 +162,7 @@ def settle_auction():
 @external
 @payable
 @nonreentrant("lock")
-def create_wl_bid(llama_id: uint256, bid_amount: uint256, sig: Bytes[65]):
+def create_wl_bid(auction_index: uint256, bid_amount: uint256, sig: Bytes[65]):
     """
     @dev Create a bid.
       Throws if the whitelist is not enabled.
@@ -171,21 +174,22 @@ def create_wl_bid(llama_id: uint256, bid_amount: uint256, sig: Bytes[65]):
     assert self._check_wl_signature(sig, msg.sender), "Signature is invalid"
     assert self.wl_auctions_won[msg.sender] < 2, "Already won 2 WL auctions"
 
-    self._create_bid(llama_id, bid_amount)
+    self._create_bid(auction_index, bid_amount)
 
 
 @external
 @payable
 @nonreentrant("lock")
-def create_bid(llama_id: uint256, bid_amount: uint256):
+def create_bid(auction_index: uint256, bid_amount: uint256):
     """
     @dev Create a bid.
       Throws if the whitelist is enabled.
     """
 
     assert self.wl_enabled == False, "Public auction is not enabled"
+    assert auction_index < MAX_CONCURRENT_AUCTIONS, "Auction index is invalid"
 
-    self._create_bid(llama_id, bid_amount)
+    self._create_bid(auction_index, bid_amount)
 
 
 ### WITHDRAW ###
@@ -250,8 +254,9 @@ def unpause():
     assert msg.sender == self.owner, "Caller is not the owner"
     self._unpause()
 
-    if self.auction.start_time == 0 or self.auction.settled:
-        self._create_auction()
+    for i in range(MAX_CONCURRENT_AUCTIONS):
+        if self.auctions[i].start_time == 0 or self.auctions[i].settled:
+            self._create_auction(i)
 
 
 @external
@@ -357,12 +362,12 @@ def set_wl_signer(_wl_signer: address):
 
 
 @internal
-def _create_auction():
+def _create_auction(auction_index: uint256):
     _llama_id: uint256 = self.llamas.mint()
     _start_time: uint256 = block.timestamp
     _end_time: uint256 = _start_time + self.duration
 
-    self.auction = Auction(
+    self.auctions[auction_index] = Auction(
         {
             llama_id: _llama_id,
             amount: 0,
@@ -378,32 +383,33 @@ def _create_auction():
 
 
 @internal
-def _settle_auction():
-    assert self.auction.start_time != 0, "Auction hasn't begun"
-    assert self.auction.settled == False, "Auction has already been settled"
-    assert block.timestamp > self.auction.end_time, "Auction hasn't completed"
+def _settle_auction(auction_index: uint256):
+    auction: Auction = self.auctions[auction_index]
+    assert auction.start_time != 0, "Auction hasn't begun"
+    assert auction.settled == False, "Auction has already been settled"
+    assert block.timestamp > auction.end_time, "Auction hasn't completed"
 
-    self.auction.settled = True
+    self.auctions[auction_index].settled = True
 
-    if self.auction.bidder == empty(address):
-        self.llamas.transferFrom(self, self.owner, self.auction.llama_id)
+    if auction.bidder == empty(address):
+        self.llamas.transferFrom(self, self.owner, auction.llama_id)
     else:
         self.llamas.transferFrom(
-            self, self.auction.bidder, self.auction.llama_id
+            self, auction.bidder, auction.llama_id
         )
         if self.wl_enabled:
-            self.wl_auctions_won[self.auction.bidder] += 1
-    if self.auction.amount > 0:
-        send(self.owner, self.auction.amount)
+            self.wl_auctions_won[auction.bidder] += 1
+    if auction.amount > 0:
+        send(self.owner, auction.amount)
 
     log AuctionSettled(
-        self.auction.llama_id, self.auction.bidder, self.auction.amount
+        auction.llama_id, auction.bidder, auction.amount
     )
 
 
 @internal
 @payable
-def _create_bid(llama_id: uint256, amount: uint256):
+def _create_bid(auction_index: uint256, amount: uint256):
     if msg.value < amount:
         missing_amount: uint256 = amount - msg.value
         # Try to use the users pending returns
@@ -411,30 +417,33 @@ def _create_bid(llama_id: uint256, amount: uint256):
             self.pending_returns[msg.sender] >= missing_amount
         ), "Does not have enough pending returns to cover remainder"
         self.pending_returns[msg.sender] -= missing_amount
-    assert self.auction.llama_id == llama_id, "Llama not up for auction"
-    assert block.timestamp < self.auction.end_time, "Auction expired"
+    auction: Auction = self.auctions[auction_index]
+    assert auction.settled == False, "Auction already settled"
+    assert block.timestamp < auction.end_time, "Auction expired"
     assert amount >= self.reserve_price, "Must send at least reservePrice"
-    assert amount >= self.auction.amount + (
-        (self.auction.amount * self.min_bid_increment_percentage) / 100
+    assert amount >= auction.amount + (
+        (auction.amount * self.min_bid_increment_percentage) / 100
     ), "Must send more than last bid by min_bid_increment_percentage amount"
 
-    last_bidder: address = self.auction.bidder
+    last_bidder: address = auction.bidder
 
     if last_bidder != empty(address):
-        self.pending_returns[last_bidder] += self.auction.amount
+        self.pending_returns[last_bidder] += auction.amount
 
-    self.auction.amount = amount
-    self.auction.bidder = msg.sender
+    auction.amount = amount
+    auction.bidder = msg.sender
 
-    extended: bool = self.auction.end_time - block.timestamp < self.time_buffer
-
-    if extended:
-        self.auction.end_time = block.timestamp + self.time_buffer
-
-    log AuctionBid(self.auction.llama_id, msg.sender, amount, extended)
+    extended: bool = auction.end_time - block.timestamp < self.time_buffer
 
     if extended:
-        log AuctionExtended(self.auction.llama_id, self.auction.end_time)
+        auction.end_time = block.timestamp + self.time_buffer
+
+    self.auctions[auction_index] = auction
+
+    log AuctionBid(auction.llama_id, msg.sender, amount, extended)
+
+    if extended:
+        log AuctionExtended(auction.llama_id, auction.end_time)
 
 
 @internal
