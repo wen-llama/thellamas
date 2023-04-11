@@ -100,11 +100,11 @@ def test_balanceOf_nonzero_address(token):
 
 
 def test_stop_al_mint(token):
-    assert token.al_mint_started() == False
+    assert token.al_mint_started() is False
     token.start_al_mint()
-    assert token.al_mint_started() == True
+    assert token.al_mint_started() is True
     token.stop_al_mint()
-    assert token.al_mint_started() == False
+    assert token.al_mint_started() is False
 
 
 #
