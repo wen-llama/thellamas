@@ -159,6 +159,24 @@ def settle_auction():
 @external
 @payable
 @nonreentrant("lock")
+def create_friend_bid(llama_id: uint256, bid_amount: uint256, sig: Bytes[65]):
+    """
+    @dev Create a bid.
+      Throws if the whitelist is not enabled.
+      Throws if the `sig` is invalid.
+      Throws if the `msg.sender` has already won one whitelist auctions.
+    """
+
+    assert self.wl_enabled == True, "WL auction is not enabled"
+    assert self._check_friend_signature(sig, msg.sender), "Signature is invalid"
+    assert self.wl_auctions_won[msg.sender] < 1, "Already won 1 WL auction"
+
+    self._create_bid(llama_id, bid_amount)
+
+
+@external
+@payable
+@nonreentrant("lock")
 def create_wl_bid(llama_id: uint256, bid_amount: uint256, sig: Bytes[65]):
     """
     @dev Create a bid.
@@ -373,7 +391,6 @@ def _create_auction():
         }
     )
 
-    # TODO: Nouns has an auto pause on error here.
     log AuctionCreated(_llama_id, _start_time, _end_time)
 
 
@@ -457,6 +474,22 @@ def _check_wl_signature(sig: Bytes[65], sender: address) -> bool:
         concat(
             b"\x19Ethereum Signed Message:\n32",
             keccak256(_abi_encode("whitelist:", sender)),
+        )
+    )
+
+    return self.wl_signer == ecrecover(ethSignedHash, v, r, s)
+
+
+@internal
+@view
+def _check_friend_signature(sig: Bytes[65], sender: address) -> bool:
+    r: uint256 = convert(slice(sig, 0, 32), uint256)
+    s: uint256 = convert(slice(sig, 32, 32), uint256)
+    v: uint256 = convert(slice(sig, 64, 1), uint256)
+    ethSignedHash: bytes32 = keccak256(
+        concat(
+            b"\x19Ethereum Signed Message:\n32",
+            keccak256(_abi_encode("friend:", sender)),
         )
     )
 

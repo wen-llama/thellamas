@@ -180,6 +180,68 @@ def test_withdraw_stale_not_owner(auction_house, alice):
 # WL Bidding
 
 
+def test_create_friend_bid(auction_house_unpaused, alice, deployer):
+    alice_encoded = encode(["string", "address"], ["friend:", alice.address])
+    alice_hashed = web3.keccak(alice_encoded)
+    alice_signable_message = encode_defunct(alice_hashed)
+    signed_message = Account.sign_message(alice_signable_message, deployer.private_key)
+    auction_house_unpaused.create_friend_bid(
+        20, 100, signed_message.signature, {"from": alice, "value": "100 wei"}
+    )
+    current_auction = auction_house_unpaused.auction()
+    assert current_auction["bidder"] == alice
+    assert current_auction["amount"] == 100
+
+
+def test_create_friend_bid_wl_disabled(auction_house_unpaused, alice, deployer):
+    alice_encoded = encode(["string", "address"], ["friend:", alice.address])
+    alice_hashed = web3.keccak(alice_encoded)
+    alice_signable_message = encode_defunct(alice_hashed)
+    signed_message = Account.sign_message(alice_signable_message, deployer.private_key)
+    auction_house_unpaused.disable_wl()
+    with brownie.reverts("WL auction is not enabled"):
+        auction_house_unpaused.create_friend_bid(
+            20, 100, signed_message.signature, {"from": alice, "value": "100 wei"}
+        )
+
+
+def test_create_friend_bid_after_already_winning_one_auction(
+    token, auction_house_unpaused, alice, deployer
+):
+    alice_encoded = encode(["string", "address"], ["friend:", alice.address])
+    alice_hashed = web3.keccak(alice_encoded)
+    alice_signable_message = encode_defunct(alice_hashed)
+    signed_message = Account.sign_message(alice_signable_message, deployer.private_key)
+    auction_house_unpaused.create_friend_bid(
+        20, 100, signed_message.signature, {"from": alice, "value": "100 wei"}
+    )
+    current_auction = auction_house_unpaused.auction()
+    assert current_auction["bidder"] == alice
+    assert current_auction["amount"] == 100
+
+    chain.sleep(1000)
+
+    auction_house_unpaused.settle_current_and_create_new_auction()
+
+    assert token.ownerOf(20) == alice
+
+    with brownie.reverts("Already won 1 WL auction"):
+        auction_house_unpaused.create_friend_bid(
+            20, 100, signed_message.signature, {"from": alice, "value": "100 wei"}
+        )
+
+
+def test_wl_signature_cannot_be_used_for_friend_bid(token, auction_house_unpaused, alice, deployer):
+    alice_encoded = encode(["string", "address"], ["whitelist:", alice.address])
+    alice_hashed = web3.keccak(alice_encoded)
+    alice_signable_message = encode_defunct(alice_hashed)
+    signed_message = Account.sign_message(alice_signable_message, deployer.private_key)
+    with brownie.reverts("Signature is invalid"):
+        auction_house_unpaused.create_friend_bid(
+            20, 100, signed_message.signature, {"from": alice, "value": "100 wei"}
+        )
+
+
 def test_create_wl_bid(auction_house_unpaused, alice, deployer):
     alice_encoded = encode(["string", "address"], ["whitelist:", alice.address])
     alice_hashed = web3.keccak(alice_encoded)
