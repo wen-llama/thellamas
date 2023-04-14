@@ -6,6 +6,9 @@ from eth_abi import encode
 from eth_account import Account
 from eth_account.messages import encode_defunct
 
+# 235 premints starting from ID 0
+ID_AFTER_PREMINT = 235
+
 
 @pytest.fixture(scope="function", autouse=True)
 def isolate(fn_isolation):
@@ -75,7 +78,7 @@ def al_minted(token, alice, deployer):
 
 @pytest.fixture(scope="function")
 def minted_token_id():
-    return 235
+    return ID_AFTER_PREMINT
 
 
 # If there is a minter contract separate from the NFT, deploy here
@@ -87,7 +90,7 @@ def minter(token):
 # If there is a premint, hardcode the number of tokens preminted here for tests
 @pytest.fixture(scope="function")
 def premint():
-    return 235
+    return ID_AFTER_PREMINT
 
 
 @pytest.fixture(scope="function")
