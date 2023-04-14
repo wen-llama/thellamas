@@ -108,7 +108,7 @@ revealed: public(bool)
 default_uri: public(String[150])
 
 MAX_SUPPLY: constant(uint256) = 1111
-MAX_PREMINT: constant(uint256) = 20
+MAX_PREMINT: constant(uint256) = 235
 MAX_MINT_PER_TX: constant(uint256) = 3
 COST: constant(uint256) = as_wei_value(0.1, "ether")
 
@@ -123,8 +123,8 @@ def __init__(preminters: address[MAX_PREMINT]):
     self.symbol = "LLAMA"
     self.name = "The Llamas"
     self.owner = msg.sender
-    self.contract_uri = "ipfs://bafkreifl76ll3zsay62gx7f6xgyhdydug54pvrv5izbw2usyioi55ndyqm"
-    self.default_uri = "ipfs://bafkreiabbsdyyqhbs36ldcb5pufezudrls43qicpmxhj3ydojxqjnhnbye"
+    self.contract_uri = "https://ivory-fast-planarian-364.mypinata.cloud/ipfs/QmPAS4WmxAcqRnKyUS1KS4pCeWDMmZWyph6N3DzE6rCb7L"
+    self.default_uri = "https://ivory-fast-planarian-364.mypinata.cloud/ipfs/QmSBtCSpm3HzwfqBYLLYb7d1AkbQ73cvGWu3bbk4vP2PGd"
     self.al_mint_started = False
     self.al_signer = msg.sender
     self.minter = msg.sender
