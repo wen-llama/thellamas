@@ -108,7 +108,7 @@ revealed: public(bool)
 default_uri: public(String[150])
 
 MAX_SUPPLY: constant(uint256) = 1111
-MAX_PREMINT: constant(uint256) = 235
+MAX_PREMINT: constant(uint256) = 20
 MAX_MINT_PER_TX: constant(uint256) = 3
 COST: constant(uint256) = as_wei_value(0.1, "ether")
 
