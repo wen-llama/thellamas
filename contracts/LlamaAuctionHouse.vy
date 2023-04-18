@@ -168,7 +168,9 @@ def create_friend_bid(llama_id: uint256, bid_amount: uint256, sig: Bytes[65]):
     """
 
     assert self.wl_enabled == True, "WL auction is not enabled"
-    assert self._check_signature(sig, "friend:", msg.sender), "Signature is invalid"
+    assert self._check_signature(
+        sig, "friend:", msg.sender
+    ), "Signature is invalid"
     assert self.wl_auctions_won[msg.sender] < 1, "Already won 1 WL auction"
 
     self._create_bid(llama_id, bid_amount)
@@ -186,7 +188,9 @@ def create_wl_bid(llama_id: uint256, bid_amount: uint256, sig: Bytes[65]):
     """
 
     assert self.wl_enabled == True, "WL auction is not enabled"
-    assert self._check_signature(sig, "whitelist:", msg.sender), "Signature is invalid"
+    assert self._check_signature(
+        sig, "whitelist:", msg.sender
+    ), "Signature is invalid"
     assert self.wl_auctions_won[msg.sender] < 2, "Already won 2 WL auctions"
 
     self._create_bid(llama_id, bid_amount)
@@ -466,7 +470,9 @@ def _unpause():
 
 @internal
 @view
-def _check_signature(sig: Bytes[65], keyword: String[10], sender: address) -> bool:
+def _check_signature(
+    sig: Bytes[65], keyword: String[10], sender: address
+) -> bool:
     ethSignedHash: bytes32 = keccak256(
         concat(
             b"\x19Ethereum Signed Message:\n32",
@@ -478,5 +484,5 @@ def _check_signature(sig: Bytes[65], keyword: String[10], sender: address) -> bo
         ethSignedHash,
         convert(slice(sig, 64, 1), uint256),
         convert(slice(sig, 0, 32), uint256),
-        convert(slice(sig, 32, 32), uint256)
+        convert(slice(sig, 32, 32), uint256),
     )
