@@ -1,7 +1,6 @@
 import brownie
 import pytest
-
-# from brownie import accounts
+from brownie import accounts
 
 
 @pytest.fixture(scope="function")
@@ -15,15 +14,15 @@ def test_recovery(
 ):
     assert recovery_contract.admin() == deployer
 
-    # this will bork because the contract doesn't allow receiving ETH
-    # you can adjust the contract to see the test passes
-    # accounts[0].transfer(recovery_contract.address, "1 ether")
+    accounts[0].transfer(recovery_contract.address, "1 ether")
 
-    # balanceBefore = deployer.balance()
+    balanceBefore = deployer.balance()
+    print(balanceBefore)
     recovery_contract.recover({"from": deployer})
-    # balanceAfter = deployer.balance()
+    balanceAfter = deployer.balance()
+    print(balanceAfter)
 
-    # assert balanceAfter > balanceBefore
+    assert balanceAfter > balanceBefore
 
 
 def test_recovery_only_admin(recovery_contract, alice, deployer):

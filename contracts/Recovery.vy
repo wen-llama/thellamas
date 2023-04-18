@@ -16,6 +16,10 @@ admin: public(address)
 
 
 @external
+def __default__():
+    pass
+
+@external
 def __init__():
     self.admin = msg.sender
 
