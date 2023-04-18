@@ -168,7 +168,7 @@ def create_friend_bid(llama_id: uint256, bid_amount: uint256, sig: Bytes[65]):
     """
 
     assert self.wl_enabled == True, "WL auction is not enabled"
-    assert self._check_friend_signature(sig, msg.sender), "Signature is invalid"
+    assert self._check_signature(sig, "friend:", msg.sender), "Signature is invalid"
     assert self.wl_auctions_won[msg.sender] < 1, "Already won 1 WL auction"
 
     self._create_bid(llama_id, bid_amount)
@@ -186,7 +186,7 @@ def create_wl_bid(llama_id: uint256, bid_amount: uint256, sig: Bytes[65]):
     """
 
     assert self.wl_enabled == True, "WL auction is not enabled"
-    assert self._check_wl_signature(sig, msg.sender), "Signature is invalid"
+    assert self._check_signature(sig, "whitelist:", msg.sender), "Signature is invalid"
     assert self.wl_auctions_won[msg.sender] < 2, "Already won 2 WL auctions"
 
     self._create_bid(llama_id, bid_amount)
@@ -466,30 +466,14 @@ def _unpause():
 
 @internal
 @view
-def _check_wl_signature(sig: Bytes[65], sender: address) -> bool:
+def _check_signature(sig: Bytes[65], keyword: String[10], sender: address) -> bool:
     r: uint256 = convert(slice(sig, 0, 32), uint256)
     s: uint256 = convert(slice(sig, 32, 32), uint256)
     v: uint256 = convert(slice(sig, 64, 1), uint256)
     ethSignedHash: bytes32 = keccak256(
         concat(
             b"\x19Ethereum Signed Message:\n32",
-            keccak256(_abi_encode("whitelist:", sender)),
-        )
-    )
-
-    return self.wl_signer == ecrecover(ethSignedHash, v, r, s)
-
-
-@internal
-@view
-def _check_friend_signature(sig: Bytes[65], sender: address) -> bool:
-    r: uint256 = convert(slice(sig, 0, 32), uint256)
-    s: uint256 = convert(slice(sig, 32, 32), uint256)
-    v: uint256 = convert(slice(sig, 64, 1), uint256)
-    ethSignedHash: bytes32 = keccak256(
-        concat(
-            b"\x19Ethereum Signed Message:\n32",
-            keccak256(_abi_encode("friend:", sender)),
+            keccak256(_abi_encode(keyword, sender)),
         )
     )
 
