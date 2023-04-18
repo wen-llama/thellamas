@@ -22,10 +22,9 @@ def __init__():
 
 
 @external
-def recover() -> uint256:
+def recover():
     """
     @notice Transfer stuck ETH to msg.sender
     """
     assert msg.sender == self.admin, "Caller is not the admin"
     send(self.admin, self.balance)
-    return self.balance
