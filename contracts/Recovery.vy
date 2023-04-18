@@ -28,3 +28,4 @@ def recover() -> uint256:
     """
     assert msg.sender == self.admin, "Caller is not the admin"
     send(self.admin, self.balance)
+    return self.balance
