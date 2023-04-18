@@ -467,9 +467,6 @@ def _unpause():
 @internal
 @view
 def _check_signature(sig: Bytes[65], keyword: String[10], sender: address) -> bool:
-    r: uint256 = convert(slice(sig, 0, 32), uint256)
-    s: uint256 = convert(slice(sig, 32, 32), uint256)
-    v: uint256 = convert(slice(sig, 64, 1), uint256)
     ethSignedHash: bytes32 = keccak256(
         concat(
             b"\x19Ethereum Signed Message:\n32",
@@ -477,4 +474,9 @@ def _check_signature(sig: Bytes[65], keyword: String[10], sender: address) -> bo
         )
     )
 
-    return self.wl_signer == ecrecover(ethSignedHash, v, r, s)
+    return self.wl_signer == ecrecover(
+        ethSignedHash,
+        convert(slice(sig, 64, 1), uint256),
+        convert(slice(sig, 0, 32), uint256),
+        convert(slice(sig, 32, 32), uint256)
+    )
