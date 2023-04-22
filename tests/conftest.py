@@ -118,6 +118,7 @@ def auction_house_unpaused(LlamaAuctionHouse, token, deployer):
     auction_house.unpause()
     return auction_house
 
+
 @pytest.fixture(scope="function")
 def auction_house_sc_owner(LlamaAuctionHouse, token, deployer, smart_contract_owner):
     auction_house = LlamaAuctionHouse.deploy(token, 100, 100, 5, 100, {"from": deployer})
