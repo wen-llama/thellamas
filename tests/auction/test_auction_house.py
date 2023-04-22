@@ -728,7 +728,9 @@ def test_settle_auction_with_bid(token, deployer, auction_house_unpaused, alice)
     assert deployer_balance_after == deployer_balance_before + 100
 
 
-def test_settle_current_and_create_new_auction_with_bid_smart_contract_owner(token, smart_contract_owner, auction_house_sc_owner, alice):
+def test_settle_current_and_create_new_auction_with_bid_smart_contract_owner(
+    token, smart_contract_owner, auction_house_sc_owner, alice
+):
     assert not auction_house_sc_owner.auction()["settled"]
     auction_house_sc_owner.create_bid(20, 100, {"from": alice, "value": "100 wei"})
     chain.sleep(1000)
@@ -737,7 +739,7 @@ def test_settle_current_and_create_new_auction_with_bid_smart_contract_owner(tok
     deployer_balance_after = smart_contract_owner.balance()
     assert auction_house_sc_owner.auction()["llama_id"] == 21
     assert token.ownerOf(20) == alice
-    assert deployer_balance_after == deployer_balance_before + 100 
+    assert deployer_balance_after == deployer_balance_before + 100
 
 
 def test_settle_current_and_create_new_auction_with_bid(deployer, auction_house_unpaused, alice):

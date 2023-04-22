@@ -2,9 +2,11 @@
 
 owner: public(address)
 
+
 @external
 def __init__():
     pass
+
 
 @external
 @payable
