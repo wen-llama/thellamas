@@ -33,6 +33,11 @@ def deployer():
 
 
 @pytest.fixture(scope="function")
+def smart_contract_owner(BasicSafe, accounts):
+    return BasicSafe.deploy({"from": accounts[0]})
+
+
+@pytest.fixture(scope="function")
 def alice():
     return accounts[1]
 
@@ -111,4 +116,13 @@ def auction_house_unpaused(LlamaAuctionHouse, token, deployer):
     auction_house = LlamaAuctionHouse.deploy(token, 100, 100, 5, 100, {"from": deployer})
     token.set_minter(auction_house)
     auction_house.unpause()
+    return auction_house
+
+@pytest.fixture(scope="function")
+def auction_house_sc_owner(LlamaAuctionHouse, token, deployer, smart_contract_owner):
+    auction_house = LlamaAuctionHouse.deploy(token, 100, 100, 5, 100, {"from": deployer})
+    token.set_minter(auction_house)
+    auction_house.unpause()
+    auction_house.disable_wl()
+    auction_house.set_owner(smart_contract_owner, {"from": deployer})
     return auction_house

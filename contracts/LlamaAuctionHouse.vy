@@ -218,7 +218,7 @@ def withdraw():
 
     pending_amount: uint256 = self.pending_returns[msg.sender]
     self.pending_returns[msg.sender] = 0
-    send(msg.sender, pending_amount)
+    raw_call(msg.sender, b"", value=pending_amount)
 
     log Withdraw(msg.sender, pending_amount)
 
@@ -243,10 +243,10 @@ def withdraw_stale(addresses: DynArray[address, ADMIN_MAX_WITHDRAWALS]):
         fee: uint256 = (pending_amount * 5) / 100
         withdrawer_return: uint256 = pending_amount - fee
         self.pending_returns[_address] = 0
-        send(_address, withdrawer_return)
+        raw_call(_address, b"", value=withdrawer_return)
         total_fee += fee
 
-    send(self.owner, total_fee)
+    raw_call(self.owner, b"", value=total_fee)
 
 
 @external
@@ -411,7 +411,7 @@ def _settle_auction():
         if self.wl_enabled:
             self.wl_auctions_won[self.auction.bidder] += 1
     if self.auction.amount > 0:
-        send(self.owner, self.auction.amount)
+        raw_call(self.owner, b"", value=self.auction.amount)
 
     log AuctionSettled(
         self.auction.llama_id, self.auction.bidder, self.auction.amount
