@@ -227,6 +227,7 @@ def withdraw():
 
 
 @external
+@nonreentrant("lock")
 def withdraw_stale(addresses: DynArray[address, ADMIN_MAX_WITHDRAWALS]):
     """
     @dev Admin function to withdraw pending returns that have not been claimed.
