@@ -5,6 +5,7 @@ networks:
   development:
       cmd_settings:
           evm_version: berlin
+          gas_limit: 25000000
 
 compiler:
   evm_version: berlin
