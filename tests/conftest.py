@@ -108,13 +108,19 @@ def tokenReceiver(deployer):
 @pytest.fixture(scope="function")
 def auction_house(LlamaAuctionHouse, token, deployer):
     auction_house = LlamaAuctionHouse.deploy(token, 100, 100, 5, 100, {"from": deployer})
+    auction_house.set_auction_order([20,21,22])
     return auction_house
 
 
 @pytest.fixture(scope="function")
 def auction_house_unpaused(LlamaAuctionHouse, token, deployer):
     auction_house = LlamaAuctionHouse.deploy(token, 100, 100, 5, 100, {"from": deployer})
+    auction_house.set_auction_order([20,21,22,23])
     token.set_minter(auction_house)
+    token.mint({"from": auction_house})
+    token.mint({"from": auction_house})
+    token.mint({"from": auction_house})
+    token.mint({"from": auction_house})
     auction_house.unpause()
     return auction_house
 
@@ -122,7 +128,11 @@ def auction_house_unpaused(LlamaAuctionHouse, token, deployer):
 @pytest.fixture(scope="function")
 def auction_house_sc_owner(LlamaAuctionHouse, token, deployer, smart_contract_owner):
     auction_house = LlamaAuctionHouse.deploy(token, 100, 100, 5, 100, {"from": deployer})
+    auction_house.set_auction_order([20,21,22])
     token.set_minter(auction_house)
+    token.mint({"from": auction_house})
+    token.mint({"from": auction_house})
+    token.mint({"from": auction_house})
     auction_house.unpause()
     auction_house.disable_wl()
     auction_house.set_owner(smart_contract_owner, {"from": deployer})

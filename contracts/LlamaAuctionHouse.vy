@@ -74,6 +74,17 @@ event Withdraw:
     _amount: uint256
 
 
+event AuctionOrderUpdated:
+    _llama_ids: DynArray[uint256, MAX_AUCTIONS]
+
+
+event CurrentAuctionIndexUpdated:
+    _current_auction_index: uint256
+
+
+event AuctionHousePaused:
+    _account: address
+
 # Technically vyper doesn't need this as it is automatic
 # in all recent vyper versions, but Etherscan verification
 # will bork without it.
@@ -82,6 +93,7 @@ IDENTITY_PRECOMPILE: constant(
 ) = 0x0000000000000000000000000000000000000004
 
 ADMIN_MAX_WITHDRAWALS: constant(uint256) = 100
+MAX_AUCTIONS: constant(uint256) = 100
 
 # Auction
 llamas: public(Llama)
@@ -91,6 +103,8 @@ min_bid_increment_percentage: public(uint256)
 duration: public(uint256)
 auction: public(Auction)
 pending_returns: public(HashMap[address, uint256])
+auction_order: public(DynArray[uint256, MAX_AUCTIONS])
+current_auction_index: public(uint256)
 
 # WL Auction
 wl_enabled: public(bool)
@@ -225,6 +239,33 @@ def withdraw():
 
 ### ADMIN FUNCTIONS
 
+@external
+@nonreentrant("lock")
+def set_current_auction_index(_current_auction_index: uint256):
+    """
+    @dev Admin function to set the current auction index.
+    """
+
+    assert msg.sender == self.owner, "Caller is not the owner"
+
+    self.current_auction_index = _current_auction_index
+
+    log CurrentAuctionIndexUpdated(_current_auction_index)
+
+
+@external
+@nonreentrant("lock")
+def set_auction_order(_auction_order: DynArray[uint256, MAX_AUCTIONS]):
+    """
+    @dev Admin function to set the auction order.
+    """
+
+    assert msg.sender == self.owner, "Caller is not the owner"
+
+    self.auction_order = _auction_order
+
+    log AuctionOrderUpdated(_auction_order)
+
 
 @external
 @nonreentrant("lock")
@@ -258,6 +299,8 @@ def pause():
 
     assert msg.sender == self.owner, "Caller is not the owner"
     self._pause()
+
+    log AuctionHousePaused(msg.sender)
 
 
 @external
@@ -377,7 +420,7 @@ def set_wl_signer(_wl_signer: address):
 
 @internal
 def _create_auction():
-    _llama_id: uint256 = self.llamas.mint()
+    _llama_id: uint256 = self.auction_order[self.current_auction_index]
     _start_time: uint256 = block.timestamp
     _end_time: uint256 = _start_time + self.duration
 
@@ -402,6 +445,7 @@ def _settle_auction():
     assert block.timestamp > self.auction.end_time, "Auction hasn't completed"
 
     self.auction.settled = True
+    self.current_auction_index += 1
 
     if self.auction.bidder == empty(address):
         self.llamas.transferFrom(self, self.owner, self.auction.llama_id)
