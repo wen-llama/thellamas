@@ -104,6 +104,11 @@ owner: public(address)
 paused: public(bool)
 
 
+# Proceeds
+proceeds_receiver: public(address)
+proceeds_receiver_split_percentage: public(uint256)
+
+
 @external
 def __init__(
     _llamas: Llama,
@@ -111,6 +116,8 @@ def __init__(
     _reserve_price: uint256,
     _min_bid_increment_percentage: uint256,
     _duration: uint256,
+    _proceeds_receiver: address,
+    _proceeds_receiver_split_percentage: uint256,
 ):
     self.llamas = _llamas
     self.time_buffer = _time_buffer
@@ -121,6 +128,8 @@ def __init__(
     self.paused = True
     self.wl_enabled = True
     self.wl_signer = msg.sender
+    self.proceeds_receiver = _proceeds_receiver
+    self.proceeds_receiver_split_percentage = _proceeds_receiver_split_percentage # This should be a number between 1-99
 
 
 ### AUCTION CREATION/SETTLEMENT ###
@@ -412,7 +421,10 @@ def _settle_auction():
         if self.wl_enabled:
             self.wl_auctions_won[self.auction.bidder] += 1
     if self.auction.amount > 0:
-        raw_call(self.owner, b"", value=self.auction.amount)
+        fee: uint256 = (self.auction.amount * self.proceeds_receiver_split_percentage) / 100
+        owner_amount: uint256 = self.auction.amount - fee
+        raw_call(self.owner, b"", value=owner_amount)
+        raw_call(self.proceeds_receiver, b"", value=fee)
 
     log AuctionSettled(
         self.auction.llama_id, self.auction.bidder, self.auction.amount
