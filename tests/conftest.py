@@ -33,6 +33,11 @@ def deployer():
 
 
 @pytest.fixture(scope="function")
+def split_recipient():
+    return accounts.add()
+
+
+@pytest.fixture(scope="function")
 def smart_contract_owner(BasicSafe, accounts):
     return BasicSafe.deploy({"from": accounts[0]})
 
@@ -106,22 +111,22 @@ def tokenReceiver(deployer):
 
 
 @pytest.fixture(scope="function")
-def auction_house(LlamaAuctionHouse, token, deployer):
-    auction_house = LlamaAuctionHouse.deploy(token, 100, 100, 5, 100, {"from": deployer})
+def auction_house(LlamaAuctionHouse, token, deployer, split_recipient):
+    auction_house = LlamaAuctionHouse.deploy(token, 100, 100, 5, 100, split_recipient.address, 5, {"from": deployer})
     return auction_house
 
 
 @pytest.fixture(scope="function")
-def auction_house_unpaused(LlamaAuctionHouse, token, deployer):
-    auction_house = LlamaAuctionHouse.deploy(token, 100, 100, 5, 100, {"from": deployer})
+def auction_house_unpaused(LlamaAuctionHouse, token, deployer, split_recipient):
+    auction_house = LlamaAuctionHouse.deploy(token, 100, 100, 5, 100, split_recipient.address, 5, {"from": deployer})
     token.set_minter(auction_house)
     auction_house.unpause()
     return auction_house
 
 
 @pytest.fixture(scope="function")
-def auction_house_sc_owner(LlamaAuctionHouse, token, deployer, smart_contract_owner):
-    auction_house = LlamaAuctionHouse.deploy(token, 100, 100, 5, 100, {"from": deployer})
+def auction_house_sc_owner(LlamaAuctionHouse, token, deployer, smart_contract_owner, split_recipient):
+    auction_house = LlamaAuctionHouse.deploy(token, 100, 100, 5, 100, split_recipient.address, 5, {"from": deployer})
     token.set_minter(auction_house)
     auction_house.unpause()
     auction_house.disable_wl()

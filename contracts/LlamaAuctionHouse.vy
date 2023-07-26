@@ -103,7 +103,6 @@ owner: public(address)
 # Pause
 paused: public(bool)
 
-
 # Proceeds
 proceeds_receiver: public(address)
 proceeds_receiver_split_percentage: public(uint256)
