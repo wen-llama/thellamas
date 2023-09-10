@@ -128,7 +128,7 @@ def __init__(
     self.wl_enabled = True
     self.wl_signer = msg.sender
     self.proceeds_receiver = _proceeds_receiver
-    self.proceeds_receiver_split_percentage = _proceeds_receiver_split_percentage # This should be a number between 1-99
+    self.proceeds_receiver_split_percentage = _proceeds_receiver_split_percentage  # This should be a number between 1-99
 
 
 ### AUCTION CREATION/SETTLEMENT ###
@@ -420,7 +420,9 @@ def _settle_auction():
         if self.wl_enabled:
             self.wl_auctions_won[self.auction.bidder] += 1
     if self.auction.amount > 0:
-        fee: uint256 = (self.auction.amount * self.proceeds_receiver_split_percentage) / 100
+        fee: uint256 = (
+            self.auction.amount * self.proceeds_receiver_split_percentage
+        ) / 100
         owner_amount: uint256 = self.auction.amount - fee
         raw_call(self.owner, b"", value=owner_amount)
         raw_call(self.proceeds_receiver, b"", value=fee)
