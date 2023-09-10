@@ -703,7 +703,9 @@ def test_settle_auction_when_not_paused(auction_house_unpaused):
         auction_house_unpaused.settle_auction()
 
 
-def test_settle_current_and_create_new_auction_no_bid(token, deployer, auction_house_unpaused, split_recipient):
+def test_settle_current_and_create_new_auction_no_bid(
+    token, deployer, auction_house_unpaused, split_recipient
+):
     auction_house_unpaused.disable_wl()
     assert not auction_house_unpaused.auction()["settled"]
     old_auction_id = auction_house_unpaused.auction()["llama_id"]
@@ -750,7 +752,9 @@ def test_settle_current_and_create_new_auction_with_bid_smart_contract_owner(
     assert split_recipient_after == split_recipient_before + 5
 
 
-def test_settle_current_and_create_new_auction_with_bid(deployer, auction_house_unpaused, alice, split_recipient):
+def test_settle_current_and_create_new_auction_with_bid(
+    deployer, auction_house_unpaused, alice, split_recipient
+):
     auction_house_unpaused.disable_wl()
     assert not auction_house_unpaused.auction()["settled"]
     old_auction_id = auction_house_unpaused.auction()["llama_id"]
@@ -774,7 +778,9 @@ def test_settle_current_and_create_new_auction_when_paused(token, auction_house)
         auction_house.settle_current_and_create_new_auction()
 
 
-def test_settle_auction_multiple_bids(token, deployer, auction_house_unpaused, split_recipient, alice, bob):
+def test_settle_auction_multiple_bids(
+    token, deployer, auction_house_unpaused, split_recipient, alice, bob
+):
     auction_house_unpaused.disable_wl()
     assert not auction_house_unpaused.auction()["settled"]
     alice_balance_start = alice.balance()
@@ -798,7 +804,9 @@ def test_settle_auction_multiple_bids(token, deployer, auction_house_unpaused, s
     assert split_recipient_after == split_recipient_before + 50
 
 
-def test_bidder_outbids_prev_bidder(token, auction_house_unpaused, deployer, split_recipient, alice, bob):
+def test_bidder_outbids_prev_bidder(
+    token, auction_house_unpaused, deployer, split_recipient, alice, bob
+):
     auction_house_unpaused.disable_wl()
     assert not auction_house_unpaused.auction()["settled"]
     alice_balance_start = alice.balance()
