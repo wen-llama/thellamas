@@ -113,7 +113,7 @@ def tokenReceiver(deployer):
 @pytest.fixture(scope="function")
 def auction_house(LlamaAuctionHouse, token, deployer, split_recipient):
     auction_house = LlamaAuctionHouse.deploy(
-        token, 100, 100, 5, 100, split_recipient.address, 5, {"from": deployer}
+        token, 100, 100, 5, 100, split_recipient.address, 95, {"from": deployer}
     )
     return auction_house
 
@@ -121,7 +121,7 @@ def auction_house(LlamaAuctionHouse, token, deployer, split_recipient):
 @pytest.fixture(scope="function")
 def auction_house_unpaused(LlamaAuctionHouse, token, deployer, split_recipient):
     auction_house = LlamaAuctionHouse.deploy(
-        token, 100, 100, 5, 100, split_recipient.address, 5, {"from": deployer}
+        token, 100, 100, 5, 100, split_recipient.address, 95, {"from": deployer}
     )
     token.set_minter(auction_house)
     auction_house.unpause()
@@ -133,7 +133,7 @@ def auction_house_sc_owner(
     LlamaAuctionHouse, token, deployer, smart_contract_owner, split_recipient
 ):
     auction_house = LlamaAuctionHouse.deploy(
-        token, 100, 100, 5, 100, split_recipient.address, 5, {"from": deployer}
+        token, 100, 100, 5, 100, split_recipient.address, 95, {"from": deployer}
     )
     token.set_minter(auction_house)
     auction_house.unpause()

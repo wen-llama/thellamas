@@ -650,15 +650,15 @@ def test_withdraw_stale(token, auction_house_unpaused, deployer, split_recipient
     auction_house_unpaused.settle_current_and_create_new_auction()
 
     assert token.ownerOf(20) == bob
-    assert deployer.balance() == balance_of_deployer_before + 190
-    assert split_recipient.balance() == balance_of_split_recipient_before + 10
+    assert deployer.balance() == balance_of_deployer_before + 10
+    assert split_recipient.balance() == balance_of_split_recipient_before + 190
     assert alice.balance() == balance_of_alice_before - 100
     assert auction_house_unpaused.pending_returns(alice) == 100
     auction_house_unpaused.withdraw_stale([alice])
     assert auction_house_unpaused.pending_returns(alice) == 0
     assert alice.balance() == balance_of_alice_before - 5  # Alice gets a 5% penalty
     assert (
-        deployer.balance() == balance_of_deployer_before + 195
+        deployer.balance() == balance_of_deployer_before + 15
     )  # The owner takes 5% of alices pending returns
 
 
@@ -731,8 +731,8 @@ def test_settle_auction_with_bid(token, deployer, auction_house_unpaused, alice,
     split_recipient_after = split_recipient.balance()
     assert auction_house_unpaused.auction()["settled"]
     assert token.ownerOf(20) == alice
-    assert deployer_balance_after == deployer_balance_before + 95
-    assert split_recipient_after == split_recipient_before + 5
+    assert deployer_balance_after == deployer_balance_before + 5
+    assert split_recipient_after == split_recipient_before + 95
 
 
 def test_settle_current_and_create_new_auction_with_bid_smart_contract_owner(
@@ -748,8 +748,8 @@ def test_settle_current_and_create_new_auction_with_bid_smart_contract_owner(
     split_recipient_after = split_recipient.balance()
     assert auction_house_sc_owner.auction()["llama_id"] == 21
     assert token.ownerOf(20) == alice
-    assert deployer_balance_after == deployer_balance_before + 95
-    assert split_recipient_after == split_recipient_before + 5
+    assert deployer_balance_after == deployer_balance_before + 5
+    assert split_recipient_after == split_recipient_before + 95
 
 
 def test_settle_current_and_create_new_auction_with_bid(
@@ -768,8 +768,8 @@ def test_settle_current_and_create_new_auction_with_bid(
     new_auction_id = auction_house_unpaused.auction()["llama_id"]
     assert not auction_house_unpaused.auction()["settled"]
     assert old_auction_id < new_auction_id
-    assert deployer_balance_after == deployer_balance_before + 95
-    assert split_recipient_after == split_recipient_before + 5
+    assert deployer_balance_after == deployer_balance_before + 5
+    assert split_recipient_after == split_recipient_before + 95
 
 
 def test_settle_current_and_create_new_auction_when_paused(token, auction_house):
@@ -800,8 +800,8 @@ def test_settle_auction_multiple_bids(
     assert alice_balance_after_withdraw == alice_balance_start
     assert auction_house_unpaused.auction()["settled"]
     assert token.ownerOf(20) == bob
-    assert deployer_balance_after == deployer_balance_before + 950
-    assert split_recipient_after == split_recipient_before + 50
+    assert deployer_balance_after == deployer_balance_before + 50
+    assert split_recipient_after == split_recipient_before + 950
 
 
 def test_bidder_outbids_prev_bidder(
@@ -832,8 +832,8 @@ def test_bidder_outbids_prev_bidder(
     assert bob_balance_after_withdraw == bob_balance_start
     assert not auction_house_unpaused.auction()["settled"]
     assert token.ownerOf(20) == alice
-    assert deployer_balance_after == deployer_balance_before + 1900
-    assert split_recipient_after == split_recipient_before + 100
+    assert deployer_balance_after == deployer_balance_before + 100
+    assert split_recipient_after == split_recipient_before + 1900
 
 
 # AUCTION EXTENSION
