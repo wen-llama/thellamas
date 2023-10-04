@@ -20,8 +20,8 @@ def test_owner(auction_house, deployer):
     assert auction_house.owner() == deployer
 
 
-def test_llamas(auction_house, token):
-    assert auction_house.llamas() == token
+def test_tokens(auction_house, token):
+    assert auction_house.tokens() == token
 
 
 def test_time_buffer(auction_house):
@@ -104,7 +104,7 @@ def test_set_duration_below_range(auction_house):
 
 def test_pause_unpause(auction_house_unpaused, minted_token_id):
     assert not auction_house_unpaused.paused()
-    assert auction_house_unpaused.auction()["llama_id"] == minted_token_id
+    assert auction_house_unpaused.auction()["token_id"] == minted_token_id
     assert not auction_house_unpaused.auction()["settled"]
     auction_house_unpaused.pause()
     assert auction_house_unpaused.paused()
@@ -173,8 +173,8 @@ def test_create_bid_send_more_than_last_bid(auction_house_unpaused, alice, bob):
     assert second_bid["amount"] == 1000
 
 
-def test_create_bid_wrong_llama_id(auction_house_unpaused, alice):
-    with brownie.reverts("Llama not up for auction"):
+def test_create_bid_wrong_token_id(auction_house_unpaused, alice):
+    with brownie.reverts("Token not up for auction"):
         auction_house_unpaused.create_bid(39, 100, {"from": alice, "value": "100 wei"})
 
 
@@ -403,10 +403,10 @@ def test_settle_current_and_create_new_auction_no_bid(
     token, deployer, auction_house_unpaused, split_recipient
 ):
     assert not auction_house_unpaused.auction()["settled"]
-    old_auction_id = auction_house_unpaused.auction()["llama_id"]
+    old_auction_id = auction_house_unpaused.auction()["token_id"]
     chain.sleep(1000)
     auction_house_unpaused.settle_current_and_create_new_auction()
-    new_auction_id = auction_house_unpaused.auction()["llama_id"]
+    new_auction_id = auction_house_unpaused.auction()["token_id"]
     assert not auction_house_unpaused.auction()["settled"]
     assert old_auction_id < new_auction_id
     # Token was transferred to owner when no one bid
@@ -440,7 +440,7 @@ def test_settle_current_and_create_new_auction_with_bid_smart_contract_owner(
     auction_house_sc_owner.settle_current_and_create_new_auction()
     deployer_balance_after = smart_contract_owner.balance()
     split_recipient_after = split_recipient.balance()
-    assert auction_house_sc_owner.auction()["llama_id"] == 41
+    assert auction_house_sc_owner.auction()["token_id"] == 41
     assert token.ownerOf(40) == alice
     assert deployer_balance_after == deployer_balance_before + 5
     assert split_recipient_after == split_recipient_before + 95
@@ -450,7 +450,7 @@ def test_settle_current_and_create_new_auction_with_bid(
     deployer, auction_house_unpaused, alice, split_recipient
 ):
     assert not auction_house_unpaused.auction()["settled"]
-    old_auction_id = auction_house_unpaused.auction()["llama_id"]
+    old_auction_id = auction_house_unpaused.auction()["token_id"]
     auction_house_unpaused.create_bid(40, 100, {"from": alice, "value": "100 wei"})
     chain.sleep(1000)
     deployer_balance_before = deployer.balance()
@@ -458,7 +458,7 @@ def test_settle_current_and_create_new_auction_with_bid(
     auction_house_unpaused.settle_current_and_create_new_auction()
     deployer_balance_after = deployer.balance()
     split_recipient_after = split_recipient.balance()
-    new_auction_id = auction_house_unpaused.auction()["llama_id"]
+    new_auction_id = auction_house_unpaused.auction()["token_id"]
     assert not auction_house_unpaused.auction()["settled"]
     assert old_auction_id < new_auction_id
     assert deployer_balance_after == deployer_balance_before + 5

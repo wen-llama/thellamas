@@ -1,7 +1,7 @@
 # @version 0.3.7
 
-# @notice The Llamas auction house
-# @author The Llamas
+# @notice The tokens auction house
+# @author The tokens
 # @license MIT
 #
 # ___________.__                 .____     .__
@@ -12,7 +12,7 @@
 #                 \/      \/             \/           \/       \/      \/      \/
 
 
-interface Llama:
+interface Token:
     def mint() -> uint256: nonpayable
     def burn(token_id: uint256): nonpayable
     def transferFrom(
@@ -21,7 +21,7 @@ interface Llama:
 
 
 struct Auction:
-        llama_id: uint256
+        token_id: uint256
         amount: uint256
         start_time: uint256
         end_time: uint256
@@ -30,14 +30,14 @@ struct Auction:
 
 
 event AuctionBid:
-    _llama_id: indexed(uint256)
+    _token_id: indexed(uint256)
     _sender: address
     _value: uint256
     _extended: bool
 
 
 event AuctionExtended:
-    _llama_id: indexed(uint256)
+    _token_id: indexed(uint256)
     _end_time: uint256
 
 
@@ -58,13 +58,13 @@ event AuctionDurationUpdated:
 
 
 event AuctionCreated:
-    _llama_id: indexed(uint256)
+    _token_id: indexed(uint256)
     _start_time: uint256
     _end_time: uint256
 
 
 event AuctionSettled:
-    _llama_id: indexed(uint256)
+    _token_id: indexed(uint256)
     _winner: address
     _amount: uint256
 
@@ -84,7 +84,7 @@ IDENTITY_PRECOMPILE: constant(
 ADMIN_MAX_WITHDRAWALS: constant(uint256) = 100
 
 # Auction
-llamas: public(Llama)
+tokens: public(Token)
 time_buffer: public(uint256)
 reserve_price: public(uint256)
 min_bid_increment_percentage: public(uint256)
@@ -105,7 +105,7 @@ proceeds_receiver_split_percentage: public(uint256)
 
 @external
 def __init__(
-    _llamas: Llama,
+    _tokens: Token,
     _time_buffer: uint256,
     _reserve_price: uint256,
     _min_bid_increment_percentage: uint256,
@@ -113,7 +113,7 @@ def __init__(
     _proceeds_receiver: address,
     _proceeds_receiver_split_percentage: uint256,
 ):
-    self.llamas = _llamas
+    self.tokens = _tokens
     self.time_buffer = _time_buffer
     self.reserve_price = _reserve_price
     self.min_bid_increment_percentage = _min_bid_increment_percentage
@@ -160,13 +160,13 @@ def settle_auction():
 @external
 @payable
 @nonreentrant("lock")
-def create_bid(llama_id: uint256, bid_amount: uint256):
+def create_bid(token_id: uint256, bid_amount: uint256):
     """
     @dev Create a bid.
       Throws if the whitelist is enabled.
     """
 
-    self._create_bid(llama_id, bid_amount)
+    self._create_bid(token_id, bid_amount)
 
 
 ### WITHDRAW ###
@@ -307,13 +307,13 @@ def set_owner(_owner: address):
 
 @internal
 def _create_auction():
-    _llama_id: uint256 = self.llamas.mint()
+    _token_id: uint256 = self.tokens.mint()
     _start_time: uint256 = block.timestamp
     _end_time: uint256 = _start_time + self.duration
 
     self.auction = Auction(
         {
-            llama_id: _llama_id,
+            token_id: _token_id,
             amount: 0,
             start_time: _start_time,
             end_time: _end_time,
@@ -322,7 +322,7 @@ def _create_auction():
         }
     )
 
-    log AuctionCreated(_llama_id, _start_time, _end_time)
+    log AuctionCreated(_token_id, _start_time, _end_time)
 
 
 @internal
@@ -334,10 +334,10 @@ def _settle_auction():
     self.auction.settled = True
 
     if self.auction.bidder == empty(address):
-        self.llamas.transferFrom(self, self.owner, self.auction.llama_id)
+        self.tokens.transferFrom(self, self.owner, self.auction.token_id)
     else:
-        self.llamas.transferFrom(
-            self, self.auction.bidder, self.auction.llama_id
+        self.tokens.transferFrom(
+            self, self.auction.bidder, self.auction.token_id
         )
     if self.auction.amount > 0:
         fee: uint256 = (
@@ -348,13 +348,13 @@ def _settle_auction():
         raw_call(self.proceeds_receiver, b"", value=fee)
 
     log AuctionSettled(
-        self.auction.llama_id, self.auction.bidder, self.auction.amount
+        self.auction.token_id, self.auction.bidder, self.auction.amount
     )
 
 
 @internal
 @payable
-def _create_bid(llama_id: uint256, amount: uint256):
+def _create_bid(token_id: uint256, amount: uint256):
     if msg.value < amount:
         missing_amount: uint256 = amount - msg.value
         # Try to use the users pending returns
@@ -362,7 +362,7 @@ def _create_bid(llama_id: uint256, amount: uint256):
             self.pending_returns[msg.sender] >= missing_amount
         ), "Does not have enough pending returns to cover remainder"
         self.pending_returns[msg.sender] -= missing_amount
-    assert self.auction.llama_id == llama_id, "Llama not up for auction"
+    assert self.auction.token_id == token_id, "Token not up for auction"
     assert block.timestamp < self.auction.end_time, "Auction expired"
     assert amount >= self.reserve_price, "Must send at least reservePrice"
     assert amount >= self.auction.amount + (
@@ -382,10 +382,10 @@ def _create_bid(llama_id: uint256, amount: uint256):
     if extended:
         self.auction.end_time = block.timestamp + self.time_buffer
 
-    log AuctionBid(self.auction.llama_id, msg.sender, amount, extended)
+    log AuctionBid(self.auction.token_id, msg.sender, amount, extended)
 
     if extended:
-        log AuctionExtended(self.auction.llama_id, self.auction.end_time)
+        log AuctionExtended(self.auction.token_id, self.auction.end_time)
 
 
 @internal
