@@ -107,25 +107,29 @@ SUPPORTED_INTERFACES: constant(bytes4[5]) = [
 revealed: public(bool)
 default_uri: public(String[150])
 
-MAX_SUPPLY: constant(uint256) = 1111
-MAX_PREMINT: constant(uint256) = 20
+MAX_SUPPLY: constant(uint256) = 420
+MAX_PREMINT: constant(uint256) = 40
 MAX_MINT_PER_TX: constant(uint256) = 3
-COST: constant(uint256) = as_wei_value(0.1, "ether")
+AL_COST: constant(uint256) = as_wei_value(0.1, "ether")
+WL_COST: constant(uint256) = as_wei_value(0.3, "ether")
 
 al_mint_started: public(bool)
 al_signer: public(address)
 minter: public(address)
 al_mint_amount: public(HashMap[address, uint256])
+wl_mint_started: public(bool)
+wl_mint_amount: public(HashMap[address, uint256])
 
 
 @external
 def __init__(preminters: address[MAX_PREMINT]):
-    self.symbol = "LLAMA"
-    self.name = "The Llamas"
+    self.symbol = "LARP"
+    self.name = "LARP Collective"
     self.owner = msg.sender
     self.contract_uri = "https://ivory-fast-planarian-364.mypinata.cloud/ipfs/QmPAS4WmxAcqRnKyUS1KS4pCeWDMmZWyph6N3DzE6rCb7L"
     self.default_uri = "https://ivory-fast-planarian-364.mypinata.cloud/ipfs/QmSBtCSpm3HzwfqBYLLYb7d1AkbQ73cvGWu3bbk4vP2PGd"
     self.al_mint_started = False
+    self.wl_mint_started = False
     self.al_signer = msg.sender
     self.minter = msg.sender
 
@@ -454,6 +458,40 @@ def setApprovalForAll(operator: address, approved: bool):
 
 @external
 @payable
+def whitelistMint(
+    mint_amount: uint256, approved_amount: uint256, sig: Bytes[65]
+):
+    """
+    @notice Function to mint a token for whitelisted users
+    """
+
+    # Checks
+    assert self.wl_mint_started == True, "WL Mint not active"
+    assert mint_amount <= MAX_MINT_PER_TX, "Transaction exceeds max mint amount"
+    assert (
+        self.checkWlSignature(sig, msg.sender, approved_amount) == True
+    ), "Signature is not valid"
+    assert (
+        (self.wl_mint_amount[msg.sender] + mint_amount) <= approved_amount
+    ), "Cannot mint over approved amount"
+    assert msg.value >= WL_COST * mint_amount, "Not enough ether provided"
+
+    for i in range(MAX_MINT_PER_TX):
+        if i >= mint_amount:
+            break
+
+        token_id: uint256 = self.token_count
+        assert token_id < MAX_SUPPLY
+        self._add_token_to(msg.sender, token_id)
+        self.token_count += 1
+
+        log Transfer(empty(address), msg.sender, token_id)
+
+    self.wl_mint_amount[msg.sender] += mint_amount
+
+
+@external
+@payable
 def allowlistMint(
     mint_amount: uint256, approved_amount: uint256, sig: Bytes[65]
 ):
@@ -470,7 +508,7 @@ def allowlistMint(
     assert (
         (self.al_mint_amount[msg.sender] + mint_amount) <= approved_amount
     ), "Cannot mint over approved amount"
-    assert msg.value >= COST * mint_amount, "Not enough ether provided"
+    assert msg.value >= AL_COST * mint_amount, "Not enough ether provided"
 
     for i in range(MAX_MINT_PER_TX):
         if i >= mint_amount:
@@ -641,6 +679,22 @@ def stop_al_mint():
     self.al_mint_started = False
 
 
+@external
+def start_wl_mint():
+    assert (
+        msg.sender == self.owner
+    ), "Caller is not the owner"  # dev: "Admin Only"
+    self.wl_mint_started = True
+
+
+@external
+def stop_wl_mint():
+    assert (
+        msg.sender == self.owner
+    ), "Caller is not the owner"  # dev: "Admin Only"
+    self.wl_mint_started = False
+
+
 ## ERC-721 Enumerable Functions
 
 
@@ -703,6 +757,24 @@ def checkAlSignature(
         concat(
             b"\x19Ethereum Signed Message:\n32",
             keccak256(_abi_encode("allowlist:", sender, approved_amount)),
+        )
+    )
+
+    return self.al_signer == ecrecover(ethSignedHash, v, r, s)
+
+
+@internal
+@view
+def checkWlSignature(
+    sig: Bytes[65], sender: address, approved_amount: uint256
+) -> bool:
+    r: uint256 = convert(slice(sig, 0, 32), uint256)
+    s: uint256 = convert(slice(sig, 32, 32), uint256)
+    v: uint256 = convert(slice(sig, 64, 1), uint256)
+    ethSignedHash: bytes32 = keccak256(
+        concat(
+            b"\x19Ethereum Signed Message:\n32",
+            keccak256(_abi_encode("whitelist:", sender, approved_amount)),
         )
     )
 

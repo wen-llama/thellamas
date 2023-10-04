@@ -92,11 +92,6 @@ duration: public(uint256)
 auction: public(Auction)
 pending_returns: public(HashMap[address, uint256])
 
-# WL Auction
-wl_enabled: public(bool)
-wl_signer: public(address)
-wl_auctions_won: public(HashMap[address, uint256])
-
 # Permissions
 owner: public(address)
 
@@ -125,8 +120,6 @@ def __init__(
     self.duration = _duration
     self.owner = msg.sender
     self.paused = True
-    self.wl_enabled = True
-    self.wl_signer = msg.sender
     self.proceeds_receiver = _proceeds_receiver
     self.proceeds_receiver_split_percentage = _proceeds_receiver_split_percentage  # This should be a number between 1-99
 
@@ -167,49 +160,11 @@ def settle_auction():
 @external
 @payable
 @nonreentrant("lock")
-def create_friend_bid(llama_id: uint256, bid_amount: uint256, sig: Bytes[65]):
-    """
-    @dev Create a bid.
-      Throws if the whitelist is not enabled.
-      Throws if the `sig` is invalid.
-      Throws if the `msg.sender` has already won one whitelist auctions.
-    """
-
-    assert self.wl_enabled == True, "WL auction is not enabled"
-    assert self._check_friend_signature(sig, msg.sender), "Signature is invalid"
-    assert self.wl_auctions_won[msg.sender] < 1, "Already won 1 WL auction"
-
-    self._create_bid(llama_id, bid_amount)
-
-
-@external
-@payable
-@nonreentrant("lock")
-def create_wl_bid(llama_id: uint256, bid_amount: uint256, sig: Bytes[65]):
-    """
-    @dev Create a bid.
-      Throws if the whitelist is not enabled.
-      Throws if the `sig` is invalid.
-      Throws if the `msg.sender` has already won two whitelist auctions.
-    """
-
-    assert self.wl_enabled == True, "WL auction is not enabled"
-    assert self._check_wl_signature(sig, msg.sender), "Signature is invalid"
-    assert self.wl_auctions_won[msg.sender] < 2, "Already won 2 WL auctions"
-
-    self._create_bid(llama_id, bid_amount)
-
-
-@external
-@payable
-@nonreentrant("lock")
 def create_bid(llama_id: uint256, bid_amount: uint256):
     """
     @dev Create a bid.
       Throws if the whitelist is enabled.
     """
-
-    assert self.wl_enabled == False, "Public auction is not enabled"
 
     self._create_bid(llama_id, bid_amount)
 
@@ -350,39 +305,6 @@ def set_owner(_owner: address):
     self.owner = _owner
 
 
-@external
-def enable_wl():
-    """
-    @notice Admin function to enable the whitelist.
-    """
-
-    assert msg.sender == self.owner, "Caller is not the owner"
-
-    self.wl_enabled = True
-
-
-@external
-def disable_wl():
-    """
-    @notice Admin function to disable the whitelist.
-    """
-
-    assert msg.sender == self.owner, "Caller is not the owner"
-
-    self.wl_enabled = False
-
-
-@external
-def set_wl_signer(_wl_signer: address):
-    """
-    @notice Admin function to set the whitelist signer.
-    """
-
-    assert msg.sender == self.owner, "Caller is not the owner"
-
-    self.wl_signer = _wl_signer
-
-
 @internal
 def _create_auction():
     _llama_id: uint256 = self.llamas.mint()
@@ -417,8 +339,6 @@ def _settle_auction():
         self.llamas.transferFrom(
             self, self.auction.bidder, self.auction.llama_id
         )
-        if self.wl_enabled:
-            self.wl_auctions_won[self.auction.bidder] += 1
     if self.auction.amount > 0:
         fee: uint256 = (
             self.auction.amount * self.proceeds_receiver_split_percentage
@@ -476,35 +396,3 @@ def _pause():
 @internal
 def _unpause():
     self.paused = False
-
-
-@internal
-@view
-def _check_wl_signature(sig: Bytes[65], sender: address) -> bool:
-    r: uint256 = convert(slice(sig, 0, 32), uint256)
-    s: uint256 = convert(slice(sig, 32, 32), uint256)
-    v: uint256 = convert(slice(sig, 64, 1), uint256)
-    ethSignedHash: bytes32 = keccak256(
-        concat(
-            b"\x19Ethereum Signed Message:\n32",
-            keccak256(_abi_encode("whitelist:", sender)),
-        )
-    )
-
-    return self.wl_signer == ecrecover(ethSignedHash, v, r, s)
-
-
-@internal
-@view
-def _check_friend_signature(sig: Bytes[65], sender: address) -> bool:
-    r: uint256 = convert(slice(sig, 0, 32), uint256)
-    s: uint256 = convert(slice(sig, 32, 32), uint256)
-    v: uint256 = convert(slice(sig, 64, 1), uint256)
-    ethSignedHash: bytes32 = keccak256(
-        concat(
-            b"\x19Ethereum Signed Message:\n32",
-            keccak256(_abi_encode("friend:", sender)),
-        )
-    )
-
-    return self.wl_signer == ecrecover(ethSignedHash, v, r, s)

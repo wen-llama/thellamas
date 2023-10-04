@@ -16,7 +16,7 @@ def isolate(fn_isolation):
 
 @pytest.fixture(scope="function")
 def token(Llama, deployer, preminter):
-    premint_addresses = [preminter] * 20
+    premint_addresses = [preminter] * 40
     token = Llama.deploy(premint_addresses, {"from": deployer})
     return token
 
@@ -84,8 +84,23 @@ def al_minted(token, alice, deployer):
 
 
 @pytest.fixture(scope="function")
+def wl_minted(token, alice, deployer):
+    token.start_wl_mint()
+    # Sign a message from the wl_signer for alice
+    alice_encoded = encode(["string", "address", "uint256"], ["whitelist:", alice.address, 1])
+    alice_hashed = web3.keccak(alice_encoded)
+    alice_signable_message = encode_defunct(alice_hashed)
+    signed_message = Account.sign_message(alice_signable_message, deployer.private_key)
+    token.whitelistMint(
+        1, 1, signed_message.signature, {"from": alice, "value": web3.toWei(0.3, "ether")}
+    )
+
+    return token
+
+
+@pytest.fixture(scope="function")
 def minted_token_id():
-    return 20
+    return 40
 
 
 # If there is a minter contract separate from the NFT, deploy here
@@ -97,12 +112,12 @@ def minter(token):
 # If there is a premint, hardcode the number of tokens preminted here for tests
 @pytest.fixture(scope="function")
 def premint():
-    return 20
+    return 40
 
 
 @pytest.fixture(scope="function")
 def token_metadata():
-    return {"name": "The Llamas", "symbol": "LLAMA"}
+    return {"name": "LARP Collective", "symbol": "LARP"}
 
 
 @pytest.fixture(scope="function")
@@ -137,6 +152,5 @@ def auction_house_sc_owner(
     )
     token.set_minter(auction_house)
     auction_house.unpause()
-    auction_house.disable_wl()
     auction_house.set_owner(smart_contract_owner, {"from": deployer})
     return auction_house

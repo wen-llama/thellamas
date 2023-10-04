@@ -80,6 +80,14 @@ def signAllowlistMint(deployer, minter, amount):
     return signed_message
 
 
+def signWhitelistMint(deployer, minter, amount):
+    alice_encoded = encode(["string", "address", "uint256"], ["whitelist:", minter.address, amount])
+    alice_hashed = web3.keccak(alice_encoded)
+    alice_signable_message = encode_defunct(alice_hashed)
+    signed_message = Account.sign_message(alice_signable_message, deployer.private_key)
+    return signed_message
+
+
 #
 # Inquire the balance for the zero address - this should raise an exception
 #
@@ -107,6 +115,14 @@ def test_stop_al_mint(token):
     assert token.al_mint_started() is False
 
 
+def test_stop_wl_mint(token):
+    assert token.wl_mint_started() is False
+    token.start_wl_mint()
+    assert token.wl_mint_started() is True
+    token.stop_wl_mint()
+    assert token.wl_mint_started() is False
+
+
 #
 # Mint a token - this also tests balanceOf and
 # ownerOf
@@ -126,6 +142,21 @@ def test_mint_not_minter(token, alice):
         token.mint({"from": alice})
 
 
+def test_whitelist_mint_one(wl_minted, alice, minted_token_id):
+    assert wl_minted.balanceOf(alice) == 1
+    assert alice == wl_minted.ownerOf(minted_token_id)
+    txn_receipt = history[-1]
+    _verifyTransferEvent(txn_receipt, ZERO_ADDRESS, alice, minted_token_id) 
+
+
+def test_whitelist_mint_not_started(token, alice, deployer):
+    signed_message = signWhitelistMint(deployer, alice, 1)
+    with brownie.reverts("WL Mint not active"):
+        token.whitelistMint(
+            1, 1, signed_message.signature, {"from": alice, "value": web3.toWei(0.3, "ether")}
+        )
+
+
 def test_allowlist_mint_one(al_minted, alice, minted_token_id):
     assert al_minted.balanceOf(alice) == 1
     assert alice == al_minted.ownerOf(minted_token_id)
@@ -139,9 +170,9 @@ def test_allowlist_mint_max(token, alice, deployer):
     token.allowlistMint(
         3, 3, signed_message.signature, {"from": alice, "value": web3.toWei(0.3, "ether")}
     )
-    assert token.ownerOf(20) == alice
-    assert token.ownerOf(21) == alice
-    assert token.ownerOf(22) == alice
+    assert token.ownerOf(40) == alice
+    assert token.ownerOf(41) == alice
+    assert token.ownerOf(42) == alice
 
 
 def test_allowlist_mint_not_started(token, alice, deployer):
@@ -289,7 +320,7 @@ def test_withdraw_only_owner(token, alice, deployer):
 # Get owner of non-existing token
 #
 def test_owner_of_invalid_token_id(token):
-    token_id = 20
+    token_id = 40
     _ensureNotToken(token, token_id)
     with brownie.reverts():  # "ERC721: owner query for nonexistent token"):
         token.ownerOf(token_id)
@@ -299,7 +330,7 @@ def test_owner_of_invalid_token_id(token):
 # Test a valid transfer, initiated by the current owner of the token
 #
 def test_transferFrom(token, deployer, bob):
-    token_id = 20
+    token_id = 40
     _ensureToken(token, token_id, deployer)
 
     # Remember balances
@@ -327,7 +358,7 @@ def test_transferFrom(token, deployer, bob):
 # Test an invalid transfer - from is not current owner
 #
 def test_transferFrom_not_owner(token, deployer, bob, charlie):
-    token_id = 20
+    token_id = 40
     _ensureToken(token, token_id, deployer)
     with brownie.reverts():  # "ERC721: transfer caller is not owner nor approved"):
         token.transferFrom(charlie, bob, token_id, {"from": charlie})
@@ -337,7 +368,7 @@ def test_transferFrom_not_owner(token, deployer, bob, charlie):
 # Test an invalid transfer - to is the zero address
 #
 def test_transferFrom_to_zero_zddress(token, deployer):
-    token_id = 20
+    token_id = 40
     _ensureToken(token, token_id, deployer)
     with brownie.reverts():  # "ERC721: transfer to the zero address"):
         token.transferFrom(deployer, ZERO_ADDRESS, token_id, {"from": deployer})
@@ -356,7 +387,7 @@ def test_transfer_from_invalid_token_id(token, deployer, bob):
 # Test an invalid transfer - not authorized
 #
 def test_transfer_from_not_authorized(token, deployer, bob, charlie):
-    token_id = 20
+    token_id = 40
     _ensureToken(token, token_id, deployer)
     with brownie.reverts():  # "ERC721: transfer caller is not owner nor approved"):
         token.transferFrom(deployer, bob, token_id, {"from": charlie})
@@ -366,7 +397,7 @@ def test_transfer_from_not_authorized(token, deployer, bob, charlie):
 # Test a valid safe transfer, initiated by the current owner of the token
 #
 def test_safe_transfer_from_current_owner(token, deployer, bob):
-    token_id = 20
+    token_id = 40
     _ensureToken(token, token_id, deployer)
 
     # Remember balances
@@ -393,7 +424,7 @@ def test_safe_transfer_from_current_owner(token, deployer, bob):
 # Test an invalid safe transfer - from is not current owner
 #
 def test_safe_transfer_from_not_owner(token, deployer, bob, charlie):
-    token_id = 20
+    token_id = 40
     _ensureToken(token, token_id, deployer)
     with brownie.reverts():  # "ERC721: transfer caller is not owner nor approved"):
         token.safeTransferFrom(charlie, bob, token_id, hexbytes.HexBytes(""), {"from": charlie})
@@ -403,7 +434,7 @@ def test_safe_transfer_from_not_owner(token, deployer, bob, charlie):
 # Test an safe invalid transfer - to is the zero address
 #
 def test_safe_transfer_from_to_zero_address(token, deployer):
-    token_id = 20
+    token_id = 40
     _ensureToken(token, token_id, deployer)
     with brownie.reverts():  # "ERC721: transfer to the zero address"):
         token.safeTransferFrom(
@@ -415,7 +446,7 @@ def test_safe_transfer_from_to_zero_address(token, deployer):
 # Test an invalid safe transfer - invalid token ID
 #
 def test_safe_transfer_tid_from_to_zero_address(token, deployer, bob):
-    token_id = 20
+    token_id = 40
 
     # Make sure that token does not exist
     _ensureNotToken(token, token_id)
@@ -429,7 +460,7 @@ def test_safe_transfer_tid_from_to_zero_address(token, deployer, bob):
 # Test an invalid safe transfer - not authorized
 #
 def test_safe_transfer_from_not_authorized(token, deployer, bob, charlie):
-    token_id = 20
+    token_id = 40
     _ensureToken(token, token_id, deployer)
     with brownie.reverts():  # "ERC721: transfer caller is not owner nor approved"):
         token.safeTransferFrom(deployer, bob, token_id, hexbytes.HexBytes(""), {"from": bob})
@@ -441,7 +472,7 @@ def test_safe_transfer_from_not_authorized(token, deployer, bob, charlie):
 def test_safe_transfer_from(token, tokenReceiver, deployer):
     token_receiver = tokenReceiver
     data = "0x1234"
-    token_id = 20
+    token_id = 40
     _ensureToken(token, token_id, deployer)
 
     # get current invocation count of test contract
@@ -475,7 +506,7 @@ def test_safe_transfer_from(token, tokenReceiver, deployer):
 # Test a valid safe transfer to a contract returning the wrong proper magic value
 #
 def test_safeTransferFrom_wrongMagicValue(token, tokenReceiver, deployer):
-    tokenID = 20
+    tokenID = 40
     _ensureToken(token, tokenID, deployer)
     # Make sure that the contract returns the wrong magic value
     tokenReceiver.setReturnCorrectValue(False)
@@ -492,7 +523,7 @@ def test_safeTransferFrom_wrongMagicValue(token, tokenReceiver, deployer):
 # Test a valid safe transfer to a contract returning the proper magic value - no data
 #
 def test_safeTransferFrom_noData(token, tokenReceiver, deployer):
-    tokenID = 20
+    tokenID = 40
     _ensureToken(token, tokenID, deployer)
     # get current invocation count of test contract
     oldInvocationCount = tokenReceiver.getInvocationCount()
@@ -523,7 +554,7 @@ def test_safeTransferFrom_noData(token, tokenReceiver, deployer):
 # Test an approval which is not authorized
 #
 def test_approval_not_authorized(token, deployer, bob):
-    token_id = 20
+    token_id = 40
     _ensureToken(token, token_id, deployer)
     with brownie.reverts():  # "ERC721: approve caller is not owner nor approved for all"):
         token.approve(deployer, token_id, {"from": deployer})
@@ -533,7 +564,7 @@ def test_approval_not_authorized(token, deployer, bob):
 # Test a valid transfer, initiated by an approved sender
 #
 def test_transfer_from_approved(token, deployer, bob, charlie):
-    token_id = 20
+    token_id = 40
     _ensureToken(token, token_id, deployer)
 
     # Approve
@@ -559,7 +590,7 @@ def test_transfer_from_approved(token, deployer, bob, charlie):
 # Test setting and getting approval
 #
 def test_approval(token, deployer, bob, charlie):
-    token_id = 20
+    token_id = 40
 
     # Make sure that token does not yet exist
     _ensureNotToken(token, token_id)
@@ -591,7 +622,7 @@ def test_approval(token, deployer, bob, charlie):
 def test_approval_resetUponTransfer(token, deployer):
     alice = accounts[1]
     bob = accounts[2]
-    tokenID = 20
+    tokenID = 40
     _ensureToken(token, tokenID, deployer)
     # Approve for bob
     token.approve(bob, tokenID, {"from": deployer})
@@ -647,7 +678,7 @@ def test_only_approval_not_on_my_tokens(token, alice):
 # Test authorization logic for setting and getting approval
 #
 def test_approval_authorization(token, deployer, bob, charlie):
-    token_id = 20
+    token_id = 40
     _ensureToken(token, token_id, deployer)
     # Try to approve for charlie while not being owner or operator - this should raise an exception
     with brownie.reverts():  # "ERC721: approve caller is not owner nor approved for all"):
@@ -673,7 +704,7 @@ def test_approval_authorization(token, deployer, bob, charlie):
 def test_transferFrom_operator(token, deployer):
     alice = accounts[1]
     bob = accounts[2]
-    tokenID = 20
+    tokenID = 40
     _ensureToken(token, tokenID, deployer)
     # Now make bob an operator for me
     token.setApprovalForAll(bob, True, {"from": deployer})
@@ -721,7 +752,7 @@ def test_name_symbol(token):
 # Test tokenURI
 #
 def test_token_uri(token, deployer):
-    token_id = 20
+    token_id = 40
 
     # Make sure that token does not yet exist
     _ensureNotToken(token, token_id)
@@ -748,7 +779,7 @@ def test_token_uri(token, deployer):
 # Test tokenURI - token ID 0
 #
 def test_token_uri_id_zero(token, deployer):
-    token_id = 20
+    token_id = 40
     # Make sure that token does not yet exist
     _ensureNotToken(token, token_id)
     # Try to get tokenURI of invalid token - should raise exception
