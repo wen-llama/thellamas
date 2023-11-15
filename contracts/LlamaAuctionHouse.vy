@@ -465,10 +465,15 @@ def _settle_auction():
         if self.wl_enabled:
             self.wl_auctions_won[self.auction.bidder] += 1
     if self.auction.amount > 0:
-        fee: uint256 = (self.auction.amount * self.proceeds_receiver_split_percentage) / 100
-        owner_amount: uint256 = self.auction.amount - fee
-        raw_call(self.owner, b"", value=owner_amount)
-        raw_call(self.proceeds_receiver, b"", value=fee)
+        if self.proceeds_receiver_split_percentage == 100:
+            raw_call(self.proceeds_receiver, b"", value=self.auction.amount)
+        elif self.proceeds_receiver_split_percentage == 0:
+            raw_call(self.owner, b"", value=self.auction.amount)
+        else:
+            fee: uint256 = (self.auction.amount * self.proceeds_receiver_split_percentage) / 100
+            owner_amount: uint256 = self.auction.amount - fee
+            raw_call(self.owner, b"", value=owner_amount)
+            raw_call(self.proceeds_receiver, b"", value=fee)
 
     log AuctionSettled(
         self.auction.llama_id, self.auction.bidder, self.auction.amount

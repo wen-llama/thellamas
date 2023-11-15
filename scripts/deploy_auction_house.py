@@ -7,12 +7,16 @@ def main():
     time_buffer = 300
     reserve_price = web3.toWei(0.2, "ether")
     min_bid_increment_percentage = 2
-    duration = 5400
+    duration = 604800
+    split_recipient = ""
+    split_percentage = 100
     LlamaAuctionHouse.deploy(
         llamas_addr,
         time_buffer,
         reserve_price,
         min_bid_increment_percentage,
         duration,
+        split_recipient,
+        split_percentage,
         {"from": acct},
     )

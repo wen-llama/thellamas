@@ -444,7 +444,45 @@ def test_create_wl_bid_using_pending_returns(token, auction_house_unpaused, alic
     assert auction_house_unpaused.pending_returns(alice) == 300
 
 
-# Public Bidding
+# Public Bidding All Proceed Split
+
+
+def test_proceeds_all_go_to_receiver_with_all_split(auction_house_unpaused_all_split, alice, deployer, split_recipient):
+    split_recipient_before = split_recipient.balance()
+    owner_before = deployer.balance()
+    auction_house_unpaused_all_split.disable_wl()
+    auction_house_unpaused_all_split.create_bid(20, 100, {"from": alice, "value": "100 wei"})
+    current_auction = auction_house_unpaused_all_split.auction()
+    assert current_auction["bidder"] == alice
+    assert current_auction["amount"] == 100
+    chain.sleep(101)
+    auction_house_unpaused_all_split.settle_current_and_create_new_auction()
+    split_recipient_after = split_recipient.balance()
+    owner_after = deployer.balance()
+    assert split_recipient_after == split_recipient_before + 100
+    assert owner_before == owner_after
+
+
+# Public Bidding No Proceed Split
+
+
+def test_proceeds_all_go_to_owner_with_no_split(auction_house_unpaused_no_split, alice, deployer, split_recipient):
+    split_recipient_before = split_recipient.balance()
+    owner_before = deployer.balance()
+    auction_house_unpaused_no_split.disable_wl()
+    auction_house_unpaused_no_split.create_bid(20, 100, {"from": alice, "value": "100 wei"})
+    current_auction = auction_house_unpaused_no_split.auction()
+    assert current_auction["bidder"] == alice
+    assert current_auction["amount"] == 100
+    chain.sleep(101)
+    auction_house_unpaused_no_split.settle_current_and_create_new_auction()
+    split_recipient_after = split_recipient.balance()
+    owner_after = deployer.balance()
+    assert split_recipient_after == split_recipient_before 
+    assert owner_after == owner_before + 100
+
+
+# Public Bidding Proceed Split
 
 
 def test_create_bid(auction_house_unpaused, alice):

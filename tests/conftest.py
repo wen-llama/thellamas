@@ -131,6 +131,32 @@ def auction_house_unpaused(LlamaAuctionHouse, token, deployer, split_recipient):
 
 
 @pytest.fixture(scope="function")
+def auction_house_unpaused_all_split(LlamaAuctionHouse, token, deployer, split_recipient):
+    auction_house = LlamaAuctionHouse.deploy(token, 100, 100, 5, 100, split_recipient.address, 100, {"from": deployer})
+    auction_house.set_auction_order([20,21,22,23])
+    token.set_minter(auction_house)
+    token.mint({"from": auction_house})
+    token.mint({"from": auction_house})
+    token.mint({"from": auction_house})
+    token.mint({"from": auction_house})
+    auction_house.unpause()
+    return auction_house
+
+
+@pytest.fixture(scope="function")
+def auction_house_unpaused_no_split(LlamaAuctionHouse, token, deployer, split_recipient):
+    auction_house = LlamaAuctionHouse.deploy(token, 100, 100, 5, 100, split_recipient.address, 0, {"from": deployer})
+    auction_house.set_auction_order([20,21,22,23])
+    token.set_minter(auction_house)
+    token.mint({"from": auction_house})
+    token.mint({"from": auction_house})
+    token.mint({"from": auction_house})
+    token.mint({"from": auction_house})
+    auction_house.unpause()
+    return auction_house
+
+
+@pytest.fixture(scope="function")
 def auction_house_sc_owner(LlamaAuctionHouse, token, deployer, smart_contract_owner, split_recipient):
     auction_house = LlamaAuctionHouse.deploy(token, 100, 100, 5, 100, split_recipient.address, 5, {"from": deployer})
     auction_house.set_auction_order([20,21,22])
