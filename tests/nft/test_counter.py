@@ -1,5 +1,4 @@
-import brownie
-from brownie import ZERO_ADDRESS
+import ape
 
 
 def test_initialCount(token, premint):
@@ -12,5 +11,5 @@ def test_increment(minted, premint):
 
 
 def test_nonzero_owner_index(token):
-    with brownie.reverts():
-        token.tokenOfOwnerByIndex(ZERO_ADDRESS, 0)
+    with ape.reverts():
+        token.tokenOfOwnerByIndex("0x0000000000000000000000000000000000000000", 0)

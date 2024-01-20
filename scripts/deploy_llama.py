@@ -1,8 +1,8 @@
-from brownie import Llama, accounts
+from ape import accounts, networks, project
 
 
 def main():
-    acct = accounts.load("llama_deployer")
+    deployer = accounts.load("llama_deployer")
     premint_addrs = [
         "0x21d446fb59466800B44143e821ab07D4f28f8D1a",
         "0x425d16B0e08a28A3Ff9e4404AE99D78C0a076C5A",
@@ -240,4 +240,5 @@ def main():
         "0x73eb240a06f0e0747c698a219462059be6aaccc8",
         "0x73eb240a06f0e0747c698a219462059be6aaccc8",
     ]
-    Llama.deploy(premint_addrs, {"from": acct})
+
+    deployer.deploy(project.Larp, premint_addrs)

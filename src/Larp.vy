@@ -1,4 +1,4 @@
-# @version 0.3.7
+# @version 0.3.10
 
 # @notice Just a basic ERC721, nothing fancy except for allowlist and bulk minting functionality.
 # @dev This would be equivalent to GBC.sol No extra functionality such as tracking how long an NFT has been held, distributing rewards, or tracking how many times someone has locked, that would all be handled off chain.  Modified from https://github.com/npc-ers/current-thing

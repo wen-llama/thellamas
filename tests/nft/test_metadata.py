@@ -16,5 +16,5 @@ def test_prereveal_token_uri_is_default(minted, alice, bob):
 
 
 def test_postreveal_token_uri_is_base_plus_id(minted, deployer):
-    minted.set_revealed(True, {"from": deployer})
+    minted.set_revealed(True, sender=deployer)
     assert minted.tokenURI(0) == f"{minted.base_uri()}{0}"

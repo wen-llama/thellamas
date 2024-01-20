@@ -1,20 +1,21 @@
-# python
-__pycache__
-*.pyc
+.DS_Store
 
-build/
-reports/
-.history
-venv/
+# VSCODE
+.vscode/
 
-# testing
-.hypothesis/
-.tox/
-/coverage
-/reports
+# Ape stuff
+.build/
+.cache/
 
-# vi(m)
-*.swp
-*.swo
-
+# Python
 .env
+.venv
+pyvenv.cfg
+.pytest_cache
+__pycache__
+bin/
+include/
+lib/
+lib64
+share/
+.hypothesis/

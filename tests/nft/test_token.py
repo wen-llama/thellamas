@@ -1,5 +1,4 @@
-import brownie
-from brownie import ZERO_ADDRESS
+import ape
 
 
 # Test the name method
@@ -24,12 +23,12 @@ def test_transfer(minted, deployer, bob, token, minted_token_id):
     init_bal_alice = token.balanceOf(deployer)
     init_bal_bob = token.balanceOf(bob)
 
-    txn_receipt = token.transferFrom(deployer, bob, minted_token_id, {"from": deployer})
+    txn_receipt = token.transferFrom(deployer, bob, minted_token_id, sender=deployer)
     assert init_bal_alice - 1 == token.balanceOf(deployer)
     assert init_bal_bob + 1 == token.balanceOf(bob)
 
     # Verify that event has been emitted
-    event = txn_receipt.events["Transfer"]
+    event = txn_receipt.events[0]
     assert event["_from"] == deployer
     assert event["_to"] == bob
     assert event["_tokenId"] == minted_token_id
@@ -41,25 +40,25 @@ def test_transfer_nonowner(minted, alice, bob, token):
     old_balance_alice = token.balanceOf(alice)
     old_balance_bob = token.balanceOf(bob)
 
-    with brownie.reverts():  # "ERC721: transfer caller is not owner nor approved"):
-        token.transferFrom(alice, bob, 1, {"from": bob})
+    with ape.reverts():  # "ERC721: transfer caller is not owner nor approved"):
+        token.transferFrom(alice, bob, 1, sender=bob)
     assert token.balanceOf(alice) == old_balance_alice
     assert token.balanceOf(bob) == old_balance_bob
 
 
 # Test a transfer with no balance
 def test_transfer_nobalance(token, alice, bob):
-    with brownie.reverts():
-        token.transferFrom(alice, bob, 1, {"from": bob})
+    with ape.reverts():
+        token.transferFrom(alice, bob, 1, sender=bob)
 
 
 # Test approval
 def test_approve(minted, deployer, bob, token, minted_token_id):
     # Allow bob to spend 100 token on my behalf
-    txn_receipt = token.approve(bob, minted_token_id, {"from": deployer})
+    txn_receipt = token.approve(bob, minted_token_id, sender=deployer)
 
     # Verify that event has been emitted
-    event = txn_receipt.events["Approval"]
+    event = txn_receipt.events[0]
     assert event["_owner"] == deployer
     assert event["_approved"] == bob
     assert event["_tokenId"] == minted_token_id
@@ -72,27 +71,27 @@ def test_approve(minted, deployer, bob, token, minted_token_id):
 def test_approve_overwrite(minted, deployer, bob, charlie, token, minted_token_id):
 
     # Allow bob to spend 100 token on my behalf
-    token.approve(bob, minted_token_id, {"from": deployer})
+    token.approve(bob, minted_token_id, sender=deployer)
 
     # Check
     assert token.getApproved(minted_token_id) == bob
 
     # Overwrite
-    token.approve(charlie, minted_token_id, {"from": deployer})
+    token.approve(charlie, minted_token_id, sender=deployer)
     assert token.getApproved(minted_token_id) == charlie
 
 
 def test_cannot_approve_owner(minted, deployer, bob, token, minted_token_id):
 
     # Allow bob to spend 100 token on my behalf
-    token.approve(bob, minted_token_id, {"from": deployer})
+    token.approve(bob, minted_token_id, sender=deployer)
 
     # Check
     assert token.getApproved(minted_token_id) == bob
 
     # Overwrite
-    with brownie.reverts():  # "ERC721: approval to current owner"):
-        token.approve(deployer, minted_token_id, {"from": deployer})
+    with ape.reverts():  # "ERC721: approval to current owner"):
+        token.approve(deployer, minted_token_id, sender=deployer)
 
 
 # Test a valid withdrawal
@@ -101,16 +100,16 @@ def test_transferFrom(minted, deployer, bob, token, minted_token_id):
     init_balance_bob = token.balanceOf(bob)
 
     # Authorize bob
-    token.approve(bob, minted_token_id, {"from": deployer})
-    txn_receipt = token.transferFrom(deployer, bob, minted_token_id, {"from": bob})
+    token.approve(bob, minted_token_id, sender=deployer)
+    txn_receipt = token.transferFrom(deployer, bob, minted_token_id, sender=bob)
     assert init_balance_deployer - 1 == token.balanceOf(deployer)
     assert init_balance_bob + 1 == token.balanceOf(bob)
 
     # Verify that event has been emitted
-    event = txn_receipt.events["Transfer"]
+    event = txn_receipt.events[0]
     assert event["_from"] == deployer
     assert event["_to"] == bob
     assert event["_tokenId"] == minted_token_id
 
     # Verify that the approval has been set to ZERO_ADDRESS
-    assert token.getApproved(minted_token_id) == ZERO_ADDRESS
+    assert token.getApproved(minted_token_id) == "0x0000000000000000000000000000000000000000"

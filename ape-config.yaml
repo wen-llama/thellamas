@@ -1,0 +1,30 @@
+name: larp-auction
+contracts_folder: src
+plugins:
+  - name: vyper
+  - name: alchemy
+  - name: foundry
+  - name: arbitrum
+  - name: solidity
+  - name: etherscan
+test:
+  disconnect_providers_after: false
+  number_of_accounts: 5
+# this sets arbitrum:mainnet-fork:foundry as the default
+default_ecosystem: arbitrum
+arbitrum:
+  default_network: mainnet-fork
+  mainnet_fork:
+    default_provider: foundry
+  goerli:
+    default_provider: alchemy
+  mainnet:
+    default_provider: alchemy
+# this configures foundry to use alchemy as the upstream provider
+foundry:
+  port: 8545
+  fork:
+    arbitrum:
+      mainnet:
+        upstream_provider: alchemy
+        block_number: 170140700

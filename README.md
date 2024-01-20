@@ -1,62 +1,44 @@
-# Llamas
+# Llama Auction House
 
-**Please read this entire document carefully to ensure the proper setup of each component.**
+## install and configure things
 
-## Installation
+0. make sure you use python 3.11.x at most (ape is not compatible with 3.12.x yet). `.python-version` is already configured for pyenv.
 
-### Creating a Virtual Environment
+1. [create a virtual env](https://docs.python.org/3/library/venv.html) using `python -m venv .`
 
-It is **strongly recommended** use a virtual environment with this project. This ensures that dependencies are strictly contained within your project and will not alter or affect your other development environment.
+2. activate the environment `source bin/activate`
 
-To create a new virtual environment and install the required dependencie:
+3. install requirements `pip install -r requirements.txt`
 
-```bash
-python3 -m venv venv
-source venv/bin/activate
-pip install -r requirements_complete.txt
-```
+4. install [foundry](https://book.getfoundry.sh/getting-started/installation)
 
-In future sessions, activate the virtual environment with:
+5. `ape plugins install .` to install the ape plugins
 
-```bash
-source venv/bin/activate
-```
+## buidl
 
-To learn more about `venv`, see the official [Python documentation](https://docs.python.org/3/library/venv.html).
+### build and test
 
-## Setting up your .env file
+always activate the environment when starting to work source bin/activate
 
-The brownie config requies a `.env` file to exist.
-Run `touch .env` to create one, you can leave it blank.
+`ape compile -s`
 
-## Setting up ganache
-Ganache is needed for testing
+gotta `export WEB3_ARBITRUM_MAINNET_ALCHEMY_PROJECT_ID=<ALCHEMY_API_KEY>` cause ape doesn't support `.env`
 
-Make sure to install ganache globally with `npm install -g ganache@7.0.2`
+run  all tests with `ape test tests/ --network arbitrum:mainnet-fork:foundry -s`
 
-## Running the Tests and Linting
+run select testfile with `ape test tests/<testfile>.py --network arbitrum:mainnet-fork:foundry -s`
 
-To run all of the project's unit tests:
+for running a specific test AND debugging the output, add `-k <test_case>` and `-v DEBUG`
 
-```bash
-brownie test
-```
+### run scripts
 
-You can use the `--gas` flag to estimate gas usage
+you need to configure ape with the accounts it'll use to make transactions
 
-### Linting
-These same commands are run in our CI so make sure to run them locally before pushing or the checks might fail. 
+for test/main-nets either `ape accounts import deployer` with your own account OR `ape accounts generate deployer` - you need to make sure your account is funded
 
-To lint Vyper files
-```bash
-mamushi
-```
+#### local / fork
 
-To lint Python files
-```bash
-black <path_to_file>
-```
+1. spin up the node using anvil: `anvil --fork-url <https://arb-mainnet.g.alchemy.com/v2/$WEB3_ARBITRUM_MAINNET_ALCHEMY_API_KEY> --fork-block-number 170140700 --chain-id 31337 --balance 1000000000`
 
-## License
-
-This project is licensed under the [MIT license](LICENSE).
+2. and then run a script
+`ape run <scriptname> --network ::foundry`
