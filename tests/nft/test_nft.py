@@ -1,6 +1,6 @@
 import ape
 import hexbytes
-from ape import accounts #, history, web3
+from ape import accounts, networks
 from eth_abi import encode
 from eth_account import Account
 from eth_account.messages import encode_defunct
@@ -73,22 +73,6 @@ def _verifyApprovalForAllEvent(txn_receipt, owner, operator, approved):
     assert event["_approved"] == approved
 
 
-def signAllowlistMint(deployer, minter, amount):
-    alice_encoded = encode(["string", "address", "uint256"], ["allowlist:", minter.address, amount])
-    alice_hashed = keccak(alice_encoded)
-    alice_signable_message = encode_defunct(alice_hashed)
-    signed_message = Account.sign_message(alice_signable_message, deployer.private_key)
-    return signed_message
-
-
-def signWhitelistMint(deployer, minter, amount):
-    alice_encoded = encode(["string", "address", "uint256"], ["whitelist:", minter.address, amount])
-    alice_hashed = keccak(alice_encoded)
-    alice_signable_message = encode_defunct(alice_hashed)
-    signed_message = Account.sign_message(alice_signable_message, deployer.private_key)
-    return signed_message
-
-
 #
 # Inquire the balance for the zero address - this should raise an exception
 #
@@ -150,11 +134,22 @@ def test_whitelist_mint_one(wl_minted, alice, minted_token_id):
     _verifyTransferEvent(txn_receipt, "0x0000000000000000000000000000000000000000", alice, minted_token_id) 
 
 
-def test_whitelist_mint_not_started(token, alice, deployer):
-    signed_message = signWhitelistMint(deployer, alice, 1)
+def test_whitelist_mint_not_started(token, alice):
     with ape.reverts("WL Mint not active"):
         token.whitelistMint(
-            1, 1, signed_message.signature, sender=alice, value="0.3 ether"
+            [
+                bytes.fromhex("01d406d4747bd12193a48c0e49c2d4f64e82b88d62e90f5ffbcec6c3cd853951"),
+                bytes.fromhex("dde94d9c8f562df87d019849933c6f4c5588f278e731af5dda4a3fe0208f74d6"),
+                bytes.fromhex("40cf18ab9bd51f9d58054254246f31fd04090cac179cd40780c17de8706572be"),
+                bytes.fromhex("02c541d566951c2470a31dcfd33617d8048956b9241fe2202ac2df867bd69f33"),
+                bytes.fromhex("038657d4f4bcc47bbd18ba0d36183cc5b533b5d459a9043eacc9edd542f2dff0"),
+                bytes.fromhex("329572f27f6cb8520d730695735833ece47bf0d0d6e759b778ef8c05b34f70de"),
+                bytes.fromhex("c58cb8c5f0fa318ebc4e0e145102da447d654314514927170c3a85d7e16ed58b"),
+                bytes.fromhex("5ebdddf044b8fa76cada5612e61d1eef0003c4060040d5423b504f6d511d141b")
+            ],
+            sender=alice,
+            value="0.3 ether",
+            gas_limit=int(1e8)
         )
 
 
@@ -165,128 +160,74 @@ def test_allowlist_mint_one(al_minted, alice, minted_token_id):
     _verifyTransferEvent(txn_receipt, "0x0000000000000000000000000000000000000000", alice, minted_token_id)
 
 
-def test_allowlist_mint_max(token, alice, deployer):
+def test_allowlist_mint_address_already_minted_max_amount(token, alice, deployer):
     token.start_al_mint(sender=deployer)
-    signed_message = signAllowlistMint(deployer, alice, 3)
     token.allowlistMint(
-        3, 3, signed_message.signature, sender=alice, value="0.3 ether"
+        [
+            bytes.fromhex("4de6f61ec539f1dbbe42f2f8f0fabac58ac41b3e72f040a7f0fdb47a72896bd8"),
+            bytes.fromhex("e0c0488cf2ec5e3f095200be58101d8a14cb8dd50487d7707dbd6c3756c35675"),
+            bytes.fromhex("3ca892a7fc01fdf94e036ea38339a6811167ab843d780c8dc9bf7860379da568")
+        ],
+        sender=alice,
+        value="0.1 ether",
+        gas_limit=int(1e8)
     )
     assert token.ownerOf(40) == alice
-    assert token.ownerOf(41) == alice
-    assert token.ownerOf(42) == alice
+    with ape.reverts("Already minted"):
+        token.allowlistMint(
+            [
+                bytes.fromhex("4de6f61ec539f1dbbe42f2f8f0fabac58ac41b3e72f040a7f0fdb47a72896bd8"),
+                bytes.fromhex("e0c0488cf2ec5e3f095200be58101d8a14cb8dd50487d7707dbd6c3756c35675"),
+                bytes.fromhex("3ca892a7fc01fdf94e036ea38339a6811167ab843d780c8dc9bf7860379da568")
+            ],
+            sender=alice,
+            value="0.1 ether",
+            gas_limit=int(1e8)
+        )
 
 
 def test_allowlist_mint_not_started(token, alice, deployer):
-    signed_message = signAllowlistMint(deployer, alice, 1)
     with ape.reverts("AL Mint not active"):
         token.allowlistMint(
-            1, 1, signed_message.signature, sender=alice, value="0.1 ether"
-        )
-
-
-def test_allowlist_mint_address_already_minted_max_amount(token, alice, deployer):
-    token.start_al_mint(sender=deployer)
-    signed_message = signAllowlistMint(deployer, alice, 1)
-    token.allowlistMint(
-        1, 1, signed_message.signature, sender=alice, value="0.1 ether"
-    )
-    with ape.reverts("Cannot mint over approved amount"):
-        token.allowlistMint(
-            1, 1, signed_message.signature, sender=alice, value="0.1 ether"
-        )
-
-
-def test_allowlist_mint_under_max_twice_then_max(token, alice, deployer):
-    token.start_al_mint(sender=deployer)
-    signed_message = signAllowlistMint(deployer, alice, 3)
-    token.allowlistMint(
-        1, 3, signed_message.signature, sender=alice, value="0.1 ether"
-    )
-    token.allowlistMint(
-        1, 3, signed_message.signature, sender=alice, value="0.1 ether"
-    )
-    assert token.balanceOf(alice) == 2
-    with ape.reverts("Cannot mint over approved amount"):
-        token.allowlistMint(
-            2, 3, signed_message.signature, sender=alice, value="0.1 ether"
-        )
-    token.allowlistMint(
-        1, 3, signed_message.signature, sender=alice, value="0.1 ether"
-    )
-    assert token.balanceOf(alice) == 3
-
-
-def test_allowlist_mint_up_to_max_then_over_max(token, alice, deployer):
-    token.start_al_mint(sender=deployer)
-    signed_message = signAllowlistMint(deployer, alice, 3)
-    token.allowlistMint(
-        1, 3, signed_message.signature, sender=alice, value="0.1 ether"
-    )
-    token.allowlistMint(
-        1, 3, signed_message.signature, sender=alice, value="0.1 ether"
-    )
-    token.allowlistMint(
-        1, 3, signed_message.signature, sender=alice, value="0.1 ether"
-    )
-    assert token.balanceOf(alice) == 3
-    with ape.reverts("Cannot mint over approved amount"):
-        token.allowlistMint(
-            1, 3, signed_message.signature, sender=alice, value="0.1 ether"
-        )
-
-
-def test_allowlist_mint_too_many(token, alice, deployer):
-    token.start_al_mint(sender=deployer)
-    signed_message = signAllowlistMint(deployer, alice, 3)
-    with ape.reverts("Transaction exceeds max mint amount"):
-        token.allowlistMint(
-            4, 3, signed_message.signature, sender=alice, value="0.4 ether"
+            [
+                bytes.fromhex("4de6f61ec539f1dbbe42f2f8f0fabac58ac41b3e72f040a7f0fdb47a72896bd8"),
+                bytes.fromhex("e0c0488cf2ec5e3f095200be58101d8a14cb8dd50487d7707dbd6c3756c35675"),
+                bytes.fromhex("3ca892a7fc01fdf94e036ea38339a6811167ab843d780c8dc9bf7860379da568")
+            ],
+            sender=alice,
+            value="0.1 ether",
+            gas_limit=int(1e8)
         )
 
 
 def test_allowlist_mint_one_not_enough_value(token, alice, deployer):
     token.start_al_mint(sender=deployer)
-    signed_message = signAllowlistMint(deployer, alice, 1)
     with ape.reverts("Not enough ether provided"):
         token.allowlistMint(
-            1, 1, signed_message.signature, sender=alice, value="0.09 ether"
+            [
+                bytes.fromhex("4de6f61ec539f1dbbe42f2f8f0fabac58ac41b3e72f040a7f0fdb47a72896bd8"),
+                bytes.fromhex("e0c0488cf2ec5e3f095200be58101d8a14cb8dd50487d7707dbd6c3756c35675"),
+                bytes.fromhex("3ca892a7fc01fdf94e036ea38339a6811167ab843d780c8dc9bf7860379da568")
+            ],
+            sender=alice,
+            value="0.09 ether",
+            gas_limit=int(1e8)
         )
 
 
-def test_allowlist_mint_two_not_enough_value(token, alice, deployer):
+def test_allowlist_mint_invalid_proof(token, deployer, alice):
     token.start_al_mint(sender=deployer)
-    signed_message = signAllowlistMint(deployer, alice, 2)
-    with ape.reverts("Not enough ether provided"):
-        token.allowlistMint(
-            2, 2, signed_message.signature, sender=alice, value="0.19 ether"
-        )
-
-
-def test_allowlist_mint_not_approved_max_amount(token, alice, deployer):
-    token.start_al_mint(sender=deployer)
-    signed_message = signAllowlistMint(deployer, alice, 1)
-    with ape.reverts("Signature is not valid"):
-        token.allowlistMint(
-            3, 3, signed_message.signature, sender=alice, value="0.3 ether"
-        )
-
-
-def test_allowlist_mint_invalid_signature(token, deployer, alice):
-    token.start_al_mint(sender=deployer)
-    signature = "0xabcd"
     with ape.reverts():
-        token.allowlistMint(3, 3, signature, sender=alice, value="0.3 ether")
-
-
-def test_allowlist_mint_zero_tokens_does_nothing(token, alice, deployer):
-    token.start_al_mint(sender=deployer)
-    signed_message = signAllowlistMint(deployer, alice, 1)
-    assert token.al_mint_amount(alice) == 0
-    token.allowlistMint(
-        0, 1, signed_message.signature, sender=alice, value="0 ether"
-    )
-    assert token.al_mint_amount(alice) == 0
-    assert token.balanceOf(alice) == 0
+        token.allowlistMint(
+            [
+                bytes.fromhex("ffffff1ec539f1dbbe42f2f8f0fabac58ac41b3e72f040a7f0fdb47a72896bd8"),
+                bytes.fromhex("ffffff8cf2ec5e3f095200be58101d8a14cb8dd50487d7707dbd6c3756c35675"),
+                bytes.fromhex("ffffffa7fc01fdf94e036ea38339a6811167ab843d780c8dc9bf7860379da568")
+            ],
+            sender=alice,
+            value="0.1 ether",
+            gas_limit=int(1e8)
+        )
 
 
 def test_withdraw(token, deployer, al_minted):

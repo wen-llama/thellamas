@@ -109,20 +109,21 @@ default_uri: public(String[150])
 
 MAX_SUPPLY: constant(uint256) = 420
 MAX_PREMINT: constant(uint256) = 40
-MAX_MINT_PER_TX: constant(uint256) = 3
 AL_COST: constant(uint256) = as_wei_value(0.1, "ether")
 WL_COST: constant(uint256) = as_wei_value(0.3, "ether")
 
-al_mint_started: public(bool)
-al_signer: public(address)
 minter: public(address)
-al_mint_amount: public(HashMap[address, uint256])
+minted: public(HashMap[address, bool])
+
+al_mint_started: public(bool)
+al_merkle_root: public(bytes32)
+
 wl_mint_started: public(bool)
-wl_mint_amount: public(HashMap[address, uint256])
+wl_merkle_root: public(bytes32)
 
 
 @external
-def __init__(preminters: address[MAX_PREMINT]):
+def __init__(al_merkle_root: bytes32, wl_merkle_root: bytes32, preminters: address[MAX_PREMINT]):
     self.symbol = "LARP"
     self.name = "LARP Collective"
     self.owner = msg.sender
@@ -130,8 +131,9 @@ def __init__(preminters: address[MAX_PREMINT]):
     self.default_uri = "https://ivory-fast-planarian-364.mypinata.cloud/ipfs/QmSBtCSpm3HzwfqBYLLYb7d1AkbQ73cvGWu3bbk4vP2PGd"
     self.al_mint_started = False
     self.wl_mint_started = False
-    self.al_signer = msg.sender
     self.minter = msg.sender
+    self.al_merkle_root = al_merkle_root
+    self.wl_merkle_root = wl_merkle_root
 
     for i in range(MAX_PREMINT):
         token_id: uint256 = self.token_count
@@ -458,70 +460,56 @@ def setApprovalForAll(operator: address, approved: bool):
 
 @external
 @payable
-def whitelistMint(
-    mint_amount: uint256, approved_amount: uint256, sig: Bytes[65]
-):
+def whitelistMint(proof: DynArray[bytes32, max_value(uint16)]):
     """
     @notice Function to mint a token for whitelisted users
     """
 
     # Checks
     assert self.wl_mint_started == True, "WL Mint not active"
-    assert mint_amount <= MAX_MINT_PER_TX, "Transaction exceeds max mint amount"
-    assert (
-        self.checkWlSignature(sig, msg.sender, approved_amount) == True
-    ), "Signature is not valid"
-    assert (
-        (self.wl_mint_amount[msg.sender] + mint_amount) <= approved_amount
-    ), "Cannot mint over approved amount"
-    assert msg.value >= WL_COST * mint_amount, "Not enough ether provided"
+    assert not self.minted[msg.sender], "Already minted"
+    assert msg.value >= WL_COST, "Not enough ether provided"
+    assert self.verify(
+        proof,
+        self.wl_merkle_root,
+        keccak256(slice(convert(msg.sender, bytes32), 12, 20))
+    ), "Failed Merkle Verification"
 
-    for i in range(MAX_MINT_PER_TX):
-        if i >= mint_amount:
-            break
+    self.minted[msg.sender] = True
 
-        token_id: uint256 = self.token_count
-        assert token_id < MAX_SUPPLY
-        self._add_token_to(msg.sender, token_id)
-        self.token_count += 1
+    # TODO: call an @internal _mint?
+    token_id: uint256 = self.token_count
+    assert token_id < MAX_SUPPLY
+    self._add_token_to(msg.sender, token_id)
+    self.token_count += 1
 
-        log Transfer(empty(address), msg.sender, token_id)
-
-    self.wl_mint_amount[msg.sender] += mint_amount
+    log Transfer(empty(address), msg.sender, token_id)
 
 
 @external
 @payable
-def allowlistMint(
-    mint_amount: uint256, approved_amount: uint256, sig: Bytes[65]
-):
+def allowlistMint(proof: DynArray[bytes32, max_value(uint16)]):
     """
     @notice Function to mint a token for allowlisted users
     """
 
     # Checks
     assert self.al_mint_started == True, "AL Mint not active"
-    assert mint_amount <= MAX_MINT_PER_TX, "Transaction exceeds max mint amount"
-    assert (
-        self.checkAlSignature(sig, msg.sender, approved_amount) == True
-    ), "Signature is not valid"
-    assert (
-        (self.al_mint_amount[msg.sender] + mint_amount) <= approved_amount
-    ), "Cannot mint over approved amount"
-    assert msg.value >= AL_COST * mint_amount, "Not enough ether provided"
+    assert not self.minted[msg.sender], "Already minted"
+    assert msg.value >= AL_COST, "Not enough ether provided"
 
-    for i in range(MAX_MINT_PER_TX):
-        if i >= mint_amount:
-            break
+    leaf: bytes32 = keccak256(slice(convert(msg.sender, bytes32), 12, 20))
+    assert self.verify(proof, self.al_merkle_root, leaf), "Failed Merkle Verification"
 
-        token_id: uint256 = self.token_count
-        assert token_id < MAX_SUPPLY
-        self._add_token_to(msg.sender, token_id)
-        self.token_count += 1
+    self.minted[msg.sender] = True
 
-        log Transfer(empty(address), msg.sender, token_id)
+    # TODO: call an @internal _mint?
+    token_id: uint256 = self.token_count
+    assert token_id < MAX_SUPPLY
+    self._add_token_to(msg.sender, token_id)
+    self.token_count += 1
 
-    self.al_mint_amount[msg.sender] += mint_amount
+    log Transfer(empty(address), msg.sender, token_id)
 
 
 @external
@@ -533,6 +521,7 @@ def mint() -> uint256:
     # Checks
     assert msg.sender == self.minter
 
+    # TODO: call an @internal _mint?
     token_id: uint256 = self.token_count
     assert token_id < MAX_SUPPLY
     self._add_token_to(msg.sender, token_id)
@@ -579,12 +568,6 @@ def contractURI() -> String[128]:
 def set_minter(minter: address):
     assert msg.sender == self.owner, "Caller is not the owner"
     self.minter = minter
-
-
-@external
-def set_al_signer(al_signer: address):
-    assert msg.sender == self.owner, "Caller is not the owner"
-    self.al_signer = al_signer
 
 
 @external
@@ -746,36 +729,170 @@ def tokensForOwner(owner: address) -> DynArray[uint256, MAX_SUPPLY]:
 
 
 @internal
-@view
-def checkAlSignature(
-    sig: Bytes[65], sender: address, approved_amount: uint256
-) -> bool:
-    r: uint256 = convert(slice(sig, 0, 32), uint256)
-    s: uint256 = convert(slice(sig, 32, 32), uint256)
-    v: uint256 = convert(slice(sig, 64, 1), uint256)
-    ethSignedHash: bytes32 = keccak256(
-        concat(
-            b"\x19Ethereum Signed Message:\n32",
-            keccak256(_abi_encode("allowlist:", sender, approved_amount)),
-        )
-    )
-
-    return self.al_signer == ecrecover(ethSignedHash, v, r, s)
+@pure
+def verify(proof: DynArray[bytes32, max_value(uint16)], root: bytes32, leaf: bytes32) -> bool:
+    """
+    @dev Returns `True` if it can be proved that a `leaf` is
+         part of a Merkle tree defined by `root`.
+    @notice Each pair of leaves and each pair of pre-images
+            are assumed to be sorted.
+    @param proof The 32-byte array containing sibling hashes
+           on the branch from the `leaf` to the `root` of the
+           Merkle tree.
+    @param root The 32-byte Merkle root hash.
+    @param leaf The 32-byte leaf hash.
+    @return bool The verification whether `leaf` is part of
+            a Merkle tree defined by `root`.
+    """
+    return self._process_proof(proof, leaf) == root
 
 
 @internal
-@view
-def checkWlSignature(
-    sig: Bytes[65], sender: address, approved_amount: uint256
-) -> bool:
-    r: uint256 = convert(slice(sig, 0, 32), uint256)
-    s: uint256 = convert(slice(sig, 32, 32), uint256)
-    v: uint256 = convert(slice(sig, 64, 1), uint256)
-    ethSignedHash: bytes32 = keccak256(
-        concat(
-            b"\x19Ethereum Signed Message:\n32",
-            keccak256(_abi_encode("whitelist:", sender, approved_amount)),
-        )
-    )
+@pure
+def multi_proof_verify(proof: DynArray[bytes32, max_value(uint16)], proof_flags: DynArray[bool, max_value(uint16)],
+                       root: bytes32, leaves: DynArray[bytes32, max_value(uint16)]) -> bool:
+    """
+    @dev Returns `True` if it can be simultaneously proved that
+         `leaves` are part of a Merkle tree defined by `root`
+         and a given set of `proof_flags`.
+    @notice Note that not all Merkle trees allow for multiproofs.
+            See `_process_multi_proof` for further details.
+    @param proof The 32-byte array containing sibling hashes
+           on the branches from `leaves` to the `root` of the
+           Merkle tree.
+    @param proof_flags The Boolean array of flags indicating
+           whether another value from the "main queue" (merging
+           branches) or an element from the `proof` array is used
+           to calculate the next hash.
+    @param root The 32-byte Merkle root hash.
+    @param leaves The 32-byte array containing the leaf hashes.
+    @return bool The verification whether `leaves` are simultaneously
+            part of a Merkle tree defined by `root`.
+    """
+    return self._process_multi_proof(proof, proof_flags, leaves) == root
 
-    return self.al_signer == ecrecover(ethSignedHash, v, r, s)
+
+@internal
+@pure
+def _process_proof(proof: DynArray[bytes32, max_value(uint16)], leaf: bytes32) -> bytes32:
+    """
+    @dev Returns the recovered hash obtained by traversing
+         a Merkle tree from `leaf` using `proof`.
+    @notice Each pair of leaves and each pair of pre-images
+            are assumed to be sorted.
+    @param proof The 32-byte array containing sibling hashes
+           on the branch from the `leaf` to the `root` of the
+           Merkle tree.
+    @param leaf The 32-byte leaf hash.
+    @return bytes32 The 32-byte recovered hash by using `leaf`
+            and `proof`.
+    """
+    computed_hash: bytes32 = leaf
+    for i in proof:
+        computed_hash = self._hash_pair(computed_hash, i)
+    return computed_hash
+
+
+@internal
+@pure
+def _process_multi_proof(proof: DynArray[bytes32, max_value(uint16)], proof_flags: DynArray[bool, max_value(uint16)],
+                         leaves: DynArray[bytes32, max_value(uint16)]) -> bytes32:
+    """
+    @dev Returns the recovered hash obtained by traversing
+         a Merkle tree from `leaves` using `proof` and a
+         a given set of `proof_flags`.
+    @notice The reconstruction is performed by incrementally
+            reconstructing all inner nodes by combining a
+            leaf/inner node with either another leaf/inner node
+            or a proof sibling node, depending on whether each
+            `proof_flags` element is `True` or `False`.
+
+            IMPORTANT: Note that not all Merkle trees allow for
+            multiproofs. In order to use multiproofs, it is
+            sufficient to ensure that:
+            1) the Merkle tree is complete (but not necessarily
+               perfect),
+            2) the `leaves` to be proved are in the reverse order
+               in which they are in the Merkle tree (i.e. from right
+               to left, starting with the deepest layer and moving
+               on to the next layer). For the definition of the
+               generalised Merkle tree index, please visit:
+               https://github.com/ethereum/consensus-specs/blob/dev/ssz/merkle-proofs.md#generalized-merkle-tree-index.
+    @param proof The 32-byte array containing sibling hashes
+           on the branches from `leaves` to the `root` of the
+           Merkle tree.
+    @param proof_flags The Boolean array of flags indicating
+           whether another value from the "main queue" (merging
+           branches) or an element from the `proof` array is used
+           to calculate the next hash.
+    @param leaves The 32-byte array containing the leaf hashes.
+    @return bytes32 The 32-byte recovered hash by using `leaves`
+            and `proof` with a given set of `proof_flags`.
+    """
+    leaves_length: uint256 = len(leaves)
+    total_hashes: uint256 = len(proof_flags)
+
+    # Checks the validity of the proof. We do not check for an
+    # overflow (nor underflow) as `leaves_length`, `proof`, and
+    # `total_hashes` are bounded by the value `max_value(uint16)`
+    # and therefore cannot overflow the `uint256` type when they
+    # are added together or incremented by 1.
+    assert unsafe_add(leaves_length, len(proof)) == unsafe_add(total_hashes, 1), "MerkleProof: invalid multiproof"
+
+    hashes: DynArray[bytes32, max_value(uint16)] = []
+    leaf_pos: uint256 = empty(uint256)
+    hash_pos: uint256 = empty(uint256)
+    proof_pos: uint256 = empty(uint256)
+    a: bytes32 = empty(bytes32)
+    b: bytes32 = empty(bytes32)
+
+    # At each step, the next hash is calculated from two values:
+    # - a value from the "main queue". If not all leaves have been used,
+    #   the next leaf is picked up, otherwise the next hash.
+    # - depending on the flag, either another value from the "main queue"
+    #   (merging branches) or an element from the `proof` array.
+    for flag in proof_flags:
+        if (leaf_pos < leaves_length):
+            a = leaves[leaf_pos]
+            leaf_pos = unsafe_add(leaf_pos, 1)
+        else:
+            a = hashes[hash_pos]
+            hash_pos = unsafe_add(hash_pos, 1)
+        if (flag):
+            if (leaf_pos < leaves_length):
+                b = leaves[leaf_pos]
+                leaf_pos = unsafe_add(leaf_pos, 1)
+            else:
+                b = hashes[hash_pos]
+                hash_pos = unsafe_add(hash_pos, 1)
+        else:
+            b = proof[proof_pos]
+            proof_pos = unsafe_add(proof_pos, 1)
+        hashes.append(self._hash_pair(a, b))
+
+    if (total_hashes != empty(uint256)):
+        # Vyper, unlike Python, does not support negative
+        # indexing and would revert in such a case. In any event,
+        # the array index cannot become negative here by design.
+        return hashes[unsafe_sub(total_hashes, 1)]
+    elif (leaves_length != empty(uint256)):
+        return leaves[empty(uint256)]
+    else:
+        return proof[empty(uint256)]
+
+
+@internal
+@pure
+def _hash_pair(a: bytes32, b: bytes32) -> bytes32:
+    """
+    @dev Returns the keccak256 hash of `a` and `b` after concatenation.
+    @notice The concatenation pattern is determined by the sorting assumption
+            of hashing pairs.
+    @param a The first 32-byte hash value to be concatenated and hashed.
+    @param b The second 32-byte hash value to be concatenated and hashed.
+    @return bytes32 The 32-byte keccak256 hash of `a` and `b`.
+    """
+    if (convert(a, uint256) < convert(b, uint256)):
+        return keccak256(concat(a, b))
+    else:
+        return keccak256(concat(b, a))
