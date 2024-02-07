@@ -54,7 +54,7 @@ def test_set_owner(deployer, auction_house, alice):
 
 
 def test_set_owner_zero_address(auction_house, deployer):
-    with ape.reverts("Cannot set owner to zero address"):
+    with ape.reverts("revert: Cannot set owner to zero address"):
         auction_house.set_owner("0x0000000000000000000000000000000000000000", sender=deployer)
     assert auction_house.owner() == deployer
 
@@ -75,13 +75,13 @@ def test_set_min_bid_increment_percentage(auction_house, deployer):
 
 
 def test_set_min_bid_increment_percentage_above_range(auction_house, deployer):
-    with ape.reverts("_min_bid_increment_percentage out of range"):
+    with ape.reverts("revert: _min_bid_increment_percentage out of range"):
         auction_house.set_min_bid_increment_percentage(16, sender=deployer)
     assert auction_house.min_bid_increment_percentage() == 5
 
 
 def test_set_min_bid_increment_percentage_below_range(auction_house, deployer):
-    with ape.reverts("_min_bid_increment_percentage out of range"):
+    with ape.reverts("revert: _min_bid_increment_percentage out of range"):
         auction_house.set_min_bid_increment_percentage(1, sender=deployer)
     assert auction_house.min_bid_increment_percentage() == 5
 
@@ -92,13 +92,13 @@ def test_set_duration(auction_house, deployer):
 
 
 def test_set_duration_above_range(auction_house, deployer):
-    with ape.reverts("_duration out of range"):
+    with ape.reverts("revert: _duration out of range"):
         auction_house.set_duration(260000, sender=deployer)
     assert auction_house.duration() == 100
 
 
 def test_set_duration_below_range(auction_house, deployer):
-    with ape.reverts("_duration out of range"):
+    with ape.reverts("revert: _duration out of range"):
         auction_house.set_duration(3599, sender=deployer)
     assert auction_house.duration() == 100
 
@@ -112,43 +112,43 @@ def test_pause_unpause(auction_house_unpaused, minted_token_id, deployer):
 
 
 def test_set_owner_not_owner(auction_house, alice):
-    with ape.reverts("Caller is not the owner"):
+    with ape.reverts("revert: Caller is not the owner"):
         auction_house.set_owner(alice, sender=alice)
 
 
 def test_set_time_buffer_not_owner(auction_house, alice):
-    with ape.reverts("Caller is not the owner"):
+    with ape.reverts("revert: Caller is not the owner"):
         auction_house.set_time_buffer(200, sender=alice)
 
 
 def test_set_reserve_price_not_owner(auction_house, alice):
-    with ape.reverts("Caller is not the owner"):
+    with ape.reverts("revert: Caller is not the owner"):
         auction_house.set_reserve_price(200, sender=alice)
 
 
 def test_set_min_bid_increment_percentage_not_owner(auction_house, alice):
-    with ape.reverts("Caller is not the owner"):
+    with ape.reverts("revert: Caller is not the owner"):
         auction_house.set_min_bid_increment_percentage(200, sender=alice)
 
 
 def test_set_duration_not_owner(auction_house, alice):
-    with ape.reverts("Caller is not the owner"):
+    with ape.reverts("revert: Caller is not the owner"):
         auction_house.set_duration(1000, sender=alice)
 
 
 
 def test_pause_not_owner(auction_house, alice):
-    with ape.reverts("Caller is not the owner"):
+    with ape.reverts("revert: Caller is not the owner"):
         auction_house.pause(sender=alice)
 
 
 def test_unpause_not_owner(auction_house, alice):
-    with ape.reverts("Caller is not the owner"):
+    with ape.reverts("revert: Caller is not the owner"):
         auction_house.unpause(sender=alice)
 
 
 def test_withdraw_stale_not_owner(auction_house, alice):
-    with ape.reverts("Caller is not the owner"):
+    with ape.reverts("revert: Caller is not the owner"):
         auction_house.withdraw_stale([alice, alice], sender=alice)
 
 
@@ -175,7 +175,7 @@ def test_create_bid_send_more_than_last_bid(auction_house_unpaused, alice, bob):
 
 
 def test_create_bid_wrong_token_id(auction_house_unpaused, alice):
-    with ape.reverts("Token not up for auction"):
+    with ape.reverts("revert: Token not up for auction"):
         auction_house_unpaused.create_bid(39, 100, sender=alice, value="100 wei")
 
 
@@ -185,12 +185,12 @@ def test_create_bid_auction_expired(auction_house_unpaused, alice):
     ape.networks.provider.set_timestamp(block.timestamp + (1000))
     ape.networks.provider.mine(1)
     
-    with ape.reverts("Auction expired"):
+    with ape.reverts("revert: Auction expired"):
         auction_house_unpaused.create_bid(40, 100, sender=alice, value="100 wei")
 
 
 def test_create_bid_value_too_low(auction_house_unpaused, alice):
-    with ape.reverts("Must send at least reservePrice"):
+    with ape.reverts("revert: Must send at least reservePrice"):
         auction_house_unpaused.create_bid(40, 1, sender=alice, value="1 wei")
 
 
@@ -200,7 +200,7 @@ def test_create_bid_not_over_prev_bid(auction_house_unpaused, alice, bob):
     assert bid_before["bidder"] == alice
     assert bid_before["amount"] == 100
 
-    with ape.reverts("Must send more than last bid by min_bid_increment_percentage amount"):
+    with ape.reverts("revert: Must send more than last bid by min_bid_increment_percentage amount"):
         auction_house_unpaused.create_bid(40, 101, sender=bob, value="101 wei")
 
     bid_after = auction_house_unpaused.auction()
@@ -303,7 +303,7 @@ def test_create_bid_using_pending_returns_not_enough(auction_house_unpaused, ali
     assert auction_2["bidder"] == bob
     assert auction_2["amount"] == 106
 
-    with ape.reverts("Does not have enough pending returns to cover remainder"):
+    with ape.reverts("revert: Does not have enough pending returns to cover remainder"):
         auction_house_unpaused.create_bid(40, 126, sender=alice, value="25 wei")
 
     auction_3 = auction_house_unpaused.auction()
@@ -405,7 +405,7 @@ def test_settle_auction_no_bid(token, deployer, auction_house_unpaused):
 
 
 def test_settle_auction_when_not_paused(auction_house_unpaused, alice):
-    with ape.reverts("Auction house is not paused"):
+    with ape.reverts("revert: Auction house is not paused"):
         auction_house_unpaused.settle_auction(sender=alice)
 
 
@@ -483,7 +483,7 @@ def test_settle_current_and_create_new_auction_with_bid(
 
 def test_settle_current_and_create_new_auction_when_paused(token, deployer, auction_house, alice):
     token.set_minter(auction_house, sender=deployer)
-    with ape.reverts("Auction house is paused"):
+    with ape.reverts("revert: Auction house is paused"):
         auction_house.settle_current_and_create_new_auction(sender=alice)
 
 
@@ -570,5 +570,5 @@ def test_create_bid_auction_not_extended(auction_house_unpaused, alice, bob):
     ape.networks.provider.set_timestamp(ape.networks.provider.get_block("latest").timestamp + (1000))
     ape.networks.provider.mine(1)
 
-    with ape.reverts("Auction expired"):
+    with ape.reverts("revert: Auction expired"):
         auction_house_unpaused.create_bid(40, 1000, sender=bob, value="1000 wei")

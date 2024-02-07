@@ -565,6 +565,13 @@ def contractURI() -> String[128]:
 
 
 @external
+def set_al_wl_roots(al_root: bytes32, wl_root: bytes32):
+    assert msg.sender == self.owner, "Caller is not the owner"
+    self.al_merkle_root = al_root
+    self.wl_merkle_root = wl_root
+
+
+@external
 def set_minter(minter: address):
     assert msg.sender == self.owner, "Caller is not the owner"
     self.minter = minter

@@ -135,7 +135,7 @@ def test_whitelist_mint_one(wl_minted, alice, minted_token_id):
 
 
 def test_whitelist_mint_not_started(token, alice):
-    with ape.reverts("WL Mint not active"):
+    with ape.reverts("revert: WL Mint not active"):
         token.whitelistMint(
             [
                 bytes.fromhex("01d406d4747bd12193a48c0e49c2d4f64e82b88d62e90f5ffbcec6c3cd853951"),
@@ -173,7 +173,7 @@ def test_allowlist_mint_address_already_minted_max_amount(token, alice, deployer
         gas_limit=int(1e8)
     )
     assert token.ownerOf(40) == alice
-    with ape.reverts("Already minted"):
+    with ape.reverts("revert: Already minted"):
         token.allowlistMint(
             [
                 bytes.fromhex("4de6f61ec539f1dbbe42f2f8f0fabac58ac41b3e72f040a7f0fdb47a72896bd8"),
@@ -187,7 +187,7 @@ def test_allowlist_mint_address_already_minted_max_amount(token, alice, deployer
 
 
 def test_allowlist_mint_not_started(token, alice, deployer):
-    with ape.reverts("AL Mint not active"):
+    with ape.reverts("revert: AL Mint not active"):
         token.allowlistMint(
             [
                 bytes.fromhex("4de6f61ec539f1dbbe42f2f8f0fabac58ac41b3e72f040a7f0fdb47a72896bd8"),
@@ -202,7 +202,7 @@ def test_allowlist_mint_not_started(token, alice, deployer):
 
 def test_allowlist_mint_one_not_enough_value(token, alice, deployer):
     token.start_al_mint(sender=deployer)
-    with ape.reverts("Not enough ether provided"):
+    with ape.reverts("revert: Not enough ether provided"):
         token.allowlistMint(
             [
                 bytes.fromhex("4de6f61ec539f1dbbe42f2f8f0fabac58ac41b3e72f040a7f0fdb47a72896bd8"),
@@ -241,7 +241,7 @@ def test_withdraw(token, deployer, al_minted):
 def test_withdraw_only_owner(token, alice, deployer):
     token.mint(sender=deployer)
 
-    with ape.reverts("Caller is not the owner"):
+    with ape.reverts("revert: Caller is not the owner"):
         token.withdraw(sender=alice)
 
 

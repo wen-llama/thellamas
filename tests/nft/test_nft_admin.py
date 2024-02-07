@@ -19,6 +19,18 @@ def test_can_set_owner(token, deployer, alice):
     assert token.owner() == alice
 
 
+def test_can_set_roots(token, deployer):
+    old_al_root = token.al_merkle_root()
+    old_wl_root = token.wl_merkle_root()
+    token.set_al_wl_roots(
+        bytes.fromhex("0000000000000000000000000000000000000000000000000000000000000000"),
+        bytes.fromhex("0000000000000000000000000000000000000000000000000000000000000000"),
+        sender=deployer
+    )
+    assert token.al_merkle_root() != old_al_root
+    assert token.wl_merkle_root() != old_wl_root
+
+
 def test_new_owner_can_set_old_owner(token, deployer, alice):
     token.set_owner(alice, sender=deployer)
     token.set_owner(deployer, sender=alice)
@@ -26,25 +38,34 @@ def test_new_owner_can_set_old_owner(token, deployer, alice):
 
 
 def test_rando_cannot_set_owner(token, alice):
-    with ape.reverts("Caller is not the owner"):
+    with ape.reverts("revert: Caller is not the owner"):
         token.set_owner(alice, sender=alice)
 
 
+def test_rando_cannot_set_roots(token, alice):
+    with ape.reverts("revert: Caller is not the owner"):
+        token.set_al_wl_roots(
+            bytes.fromhex("0000000000000000000000000000000000000000000000000000000000000000"),
+            bytes.fromhex("0000000000000000000000000000000000000000000000000000000000000000"),
+            sender=alice
+        )
+
+
 def test_rando_cannot_set_base_uri(token, alice):
-    with ape.reverts("Caller is not the owner"):
+    with ape.reverts("revert: Caller is not the owner"):
         token.set_base_uri("malware", sender=alice)
     assert token.base_uri() != "malware"
 
 
 def test_rando_cannot_set_contract_uri(token, alice):
-    with ape.reverts("Caller is not the owner"):
+    with ape.reverts("revert: Caller is not the owner"):
         token.set_contract_uri("malware", sender=alice)
     assert token.base_uri() != "malware"
 
 
 def test_rando_cannot_set_revealed(token, alice):
     assert alice != token.owner()
-    with ape.reverts("Caller is not the owner"):
+    with ape.reverts("revert: Caller is not the owner"):
         token.set_revealed(True, sender=alice)
 
 
@@ -66,5 +87,5 @@ def test_rando_cannot_withdraw_erc20(alice, token, erc20, deployer):
     assert erc20.balanceOf(token) == 10**18
     assert erc20.owner() != alice
     assert erc20.minter() != alice
-    with ape.reverts("Caller is not the owner"):
+    with ape.reverts("revert: Caller is not the owner"):
         token.admin_withdraw_erc20(erc20, alice, erc20.balanceOf(token), sender=alice)

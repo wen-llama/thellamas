@@ -241,4 +241,9 @@ def main():
         "0x73eb240a06f0e0747c698a219462059be6aaccc8",
     ]
 
-    deployer.deploy(project.Larp, premint_addrs)
+    deployer.deploy(
+        project.Larp,
+        bytes.fromhex("280de2361f686a08d02f92298994a01c99ab3a8c2cbf73527bac21f0e65a85b4"), # AL root
+        bytes.fromhex("bb1eaedfd924a774eb5a2bd4a01b496ccf8d77cca63af85cdc50ae2a54e4acb3"), # WL root
+        premint_addrs
+    )
