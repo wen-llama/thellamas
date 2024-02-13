@@ -62,6 +62,7 @@ def main():
         wl_merkle_root,
         al_merkle_root,
         premint_addrs
+        # publish=True
     )
         # max_priority_fee="100 gwei",
         # max_fee="900 gwei",

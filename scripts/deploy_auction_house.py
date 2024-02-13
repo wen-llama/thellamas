@@ -19,4 +19,5 @@ def main():
         duration, # duration
         "0x52EF1F3c4A1068d0079093cD2DCAe9eBE9Edcb8F", # proceeds receiver - TODO: CHANGE THIS
         95 # split percentage - TODO: change this
+        # publish=True
     )

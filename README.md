@@ -53,3 +53,8 @@ for test/main-nets either `ape accounts import deployer` with your own account O
 
 2. and then run
 `ape run deploy_larp --network arbitrum:sepolia:geth`
+`ape run deploy_auction_house --network arbitrum:sepolia:geth`
+
+available networks:
+ `--network ethereum:sepolia:alchemy`
+`--network arbitrum:mainnet:alchemy`
