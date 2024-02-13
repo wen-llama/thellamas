@@ -16,7 +16,7 @@ arbitrum:
   default_network: mainnet-fork
   mainnet_fork:
     default_provider: foundry
-  goerli:
+  sepolia:
     default_provider: alchemy
   mainnet:
     default_provider: alchemy
@@ -27,4 +27,4 @@ foundry:
     arbitrum:
       mainnet:
         upstream_provider: alchemy
-        block_number: 170140700
+        # block_number: 170140700

@@ -38,7 +38,9 @@ for test/main-nets either `ape accounts import deployer` with your own account O
 
 #### local / fork
 
-1. spin up the node using anvil: `anvil --fork-url <https://arb-mainnet.g.alchemy.com/v2/$WEB3_ARBITRUM_MAINNET_ALCHEMY_API_KEY> --fork-block-number 170140700 --chain-id 31337 --balance 1000000000`
+0. you can import one of the private keys from anvil, that's guaranteed to have enough eth
+
+1. spin up the node using anvil: `anvil --fork-url <https://arb-mainnet.g.alchemy.com/v2/$WEB3_ARBITRUM_MAINNET_ALCHEMY_API_KEY> --balance 1000000000`
 
 2. and then run a script
 `ape run <scriptname> --network ::foundry`
