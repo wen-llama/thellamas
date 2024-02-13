@@ -17,7 +17,7 @@ arbitrum:
   mainnet_fork:
     default_provider: foundry
   sepolia:
-    default_provider: alchemy
+    default_provider: geth
   mainnet:
     default_provider: alchemy
 # this configures foundry to use alchemy as the upstream provider
@@ -28,3 +28,9 @@ foundry:
       mainnet:
         upstream_provider: alchemy
         # block_number: 170140700
+geth:
+  arbitrum:
+    sepolia:
+      uri: https://arb-sepolia.g.alchemy.com/v2/<API_KEY>
+    mainnet:
+      uri: https://arb-mainnet.g.alchemy.com/v2/<API_KEY>

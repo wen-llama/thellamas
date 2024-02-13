@@ -30,7 +30,7 @@ run select testfile with `ape test tests/<testfile>.py --network arbitrum:mainne
 
 for running a specific test AND debugging the output, add `-k <test_case>` and `-v DEBUG`
 
-### run scripts
+### run scripts aka deploy
 
 you need to configure ape with the accounts it'll use to make transactions
 
@@ -44,3 +44,12 @@ for test/main-nets either `ape accounts import deployer` with your own account O
 
 2. and then run a script
 `ape run <scriptname> --network ::foundry`
+
+#### testnets / mainnets
+
+0. import an account with enough eth
+
+1. make sure the RPC is set on `ape-config.yaml`
+
+2. and then run
+`ape run deploy_larp --network arbitrum:sepolia:geth`
