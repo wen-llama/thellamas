@@ -162,7 +162,7 @@ def minter(token):
 
 @pytest.fixture(scope="function")
 def minted_token_id():
-    return 40
+    return 0
 
 
 # If there is a premint, hardcode the number of tokens preminted here for tests

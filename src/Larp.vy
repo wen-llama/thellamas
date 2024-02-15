@@ -135,8 +135,10 @@ def __init__(al_merkle_root: bytes32, wl_merkle_root: bytes32, preminters: addre
     self.al_merkle_root = al_merkle_root
     self.wl_merkle_root = wl_merkle_root
 
+    # premints start from token_id=380
+    step: uint256 = MAX_SUPPLY - MAX_PREMINT
     for i in range(MAX_PREMINT):
-        token_id: uint256 = self.token_count
+        token_id: uint256 = self.token_count + step
         self._add_token_to(preminters[i], token_id)
         self.token_count += 1
 
@@ -455,6 +457,25 @@ def setApprovalForAll(operator: address, approved: bool):
     log ApprovalForAll(msg.sender, operator, approved)
 
 
+### MINT HELPERS ###
+
+
+@internal
+def _mint() -> uint256:
+    # premints were minted to 380-419
+    # _mints should go from 0...379
+    # we need to adjust the token_id because token_count=MAX_PREMINT at the start
+    token_id: uint256 = self.token_count - MAX_PREMINT
+    assert token_id < MAX_SUPPLY
+
+    self._add_token_to(msg.sender, token_id)
+    self.token_count += 1
+
+    log Transfer(empty(address), msg.sender, token_id)
+
+    return token_id
+
+
 ### MINT FUNCTIONS ###
 
 
@@ -469,21 +490,13 @@ def whitelistMint(proof: DynArray[bytes32, max_value(uint16)]):
     assert self.wl_mint_started == True, "WL Mint not active"
     assert not self.minted[msg.sender], "Already minted"
     assert msg.value >= WL_COST, "Not enough ether provided"
-    assert self.verify(
-        proof,
-        self.wl_merkle_root,
-        keccak256(slice(convert(msg.sender, bytes32), 12, 20))
-    ), "Failed Merkle Verification"
+
+    leaf: bytes32 = keccak256(slice(convert(msg.sender, bytes32), 12, 20))
+    assert self.verify(proof, self.wl_merkle_root, leaf), "Failed Merkle Verification"
 
     self.minted[msg.sender] = True
 
-    # TODO: call an @internal _mint?
-    token_id: uint256 = self.token_count
-    assert token_id < MAX_SUPPLY
-    self._add_token_to(msg.sender, token_id)
-    self.token_count += 1
-
-    log Transfer(empty(address), msg.sender, token_id)
+    self._mint()
 
 
 @external
@@ -503,13 +516,7 @@ def allowlistMint(proof: DynArray[bytes32, max_value(uint16)]):
 
     self.minted[msg.sender] = True
 
-    # TODO: call an @internal _mint?
-    token_id: uint256 = self.token_count
-    assert token_id < MAX_SUPPLY
-    self._add_token_to(msg.sender, token_id)
-    self.token_count += 1
-
-    log Transfer(empty(address), msg.sender, token_id)
+    self._mint()
 
 
 @external
@@ -521,15 +528,7 @@ def mint() -> uint256:
     # Checks
     assert msg.sender == self.minter
 
-    # TODO: call an @internal _mint?
-    token_id: uint256 = self.token_count
-    assert token_id < MAX_SUPPLY
-    self._add_token_to(msg.sender, token_id)
-    self.token_count += 1
-
-    log Transfer(empty(address), msg.sender, token_id)
-
-    return token_id
+    return self._mint()
 
 
 ### ERC721-URI STORAGE FUNCTIONS ###
