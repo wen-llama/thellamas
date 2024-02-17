@@ -51,7 +51,7 @@ def split_recipient(accounts):
 
 @pytest.fixture(scope="function")
 def token(deployer, project, preminter):
-    premint_addresses = [preminter] * 40
+    premint_addresses = [preminter] * 20
     token = deployer.deploy(
         project.Larp,
         bytes.fromhex("280de2361f686a08d02f92298994a01c99ab3a8c2cbf73527bac21f0e65a85b4"),
@@ -168,7 +168,7 @@ def minted_token_id():
 # If there is a premint, hardcode the number of tokens preminted here for tests
 @pytest.fixture(scope="function")
 def premint():
-    return 40
+    return 20
 
 
 @pytest.fixture(scope="function")
