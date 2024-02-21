@@ -10,6 +10,9 @@ plugins:
   - name: solidity
   - name: etherscan
 
+vyper:
+  version: 0.3.10
+
 test:
   disconnect_providers_after: false
   number_of_accounts: 5
