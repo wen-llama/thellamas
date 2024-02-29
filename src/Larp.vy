@@ -84,7 +84,7 @@ contract_uri: String[128]
 # NFT Data
 ids_by_owner: HashMap[address, DynArray[uint256, MAX_SUPPLY]]
 id_to_index: HashMap[uint256, uint256]
-token_count: uint256
+token_count: public(uint256)
 
 owned_tokens: HashMap[
     uint256, address
@@ -108,7 +108,7 @@ revealed: public(bool)
 default_uri: public(String[150])
 
 MAX_SUPPLY: constant(uint256) = 420
-MAX_PREMINT: constant(uint256) = 20
+NUM_EACH_AIRDROP: constant(uint256) = 20
 AL_COST: constant(uint256) = as_wei_value(0.1, "ether")
 WL_COST: constant(uint256) = as_wei_value(0.3, "ether")
 
@@ -123,7 +123,7 @@ wl_merkle_root: public(bytes32)
 
 
 @external
-def __init__(al_merkle_root: bytes32, wl_merkle_root: bytes32, preminters: address[MAX_PREMINT]):
+def __init__(al_merkle_root: bytes32, wl_merkle_root: bytes32, honoraries: address[NUM_EACH_AIRDROP]):
     self.symbol = "LARP"
     self.name = "LARP Collective"
     self.owner = msg.sender
@@ -135,14 +135,7 @@ def __init__(al_merkle_root: bytes32, wl_merkle_root: bytes32, preminters: addre
     self.al_merkle_root = al_merkle_root
     self.wl_merkle_root = wl_merkle_root
 
-    # premints start from token_id=380
-    step: uint256 = MAX_SUPPLY - MAX_PREMINT
-    for i in range(MAX_PREMINT):
-        token_id: uint256 = self.token_count + step
-        self._add_token_to(preminters[i], token_id)
-        self.token_count += 1
-
-        log Transfer(empty(address), preminters[i], token_id)
+    self.airdrop_honoraries(honoraries)
 
 
 @pure
@@ -462,11 +455,10 @@ def setApprovalForAll(operator: address, approved: bool):
 
 @internal
 def _mint() -> uint256:
-    # premints were minted to 380-419
-    # _mints should go from 0...379
-    # we need to adjust the token_id because token_count=MAX_PREMINT at the start
-    token_id: uint256 = self.token_count - MAX_PREMINT
-    assert token_id < MAX_SUPPLY
+    # (adjust the token_id because token_count=NUM_EACH_AIRDROP at the start due to the honoraries)
+    token_id: uint256 = self.token_count - NUM_EACH_AIRDROP + 1
+    # auction only goes up to 380 (381-400 are discorders, 401-420 are honoraries)
+    assert token_id <= MAX_SUPPLY - (NUM_EACH_AIRDROP * 2)
 
     self._add_token_to(msg.sender, token_id)
     self.token_count += 1
@@ -530,6 +522,37 @@ def mint() -> uint256:
     assert msg.sender == self.minter
 
     return self._mint()
+
+
+### AIRDROP
+
+
+@internal
+def _airdrop(receivers: address[NUM_EACH_AIRDROP], step: uint256):
+    assert msg.sender == self.owner
+
+    for i in range(NUM_EACH_AIRDROP):
+        token_id: uint256 = step + i
+        receiver: address = receivers[i]
+
+        self._add_token_to(receiver, token_id)
+        self.token_count += 1
+
+        log Transfer(empty(address), receiver, token_id)
+
+
+@internal
+def airdrop_honoraries(honoraries: address[NUM_EACH_AIRDROP]):
+    # airdrop the honoraries (401-420)
+    step: uint256 = MAX_SUPPLY - NUM_EACH_AIRDROP + 1 # 420 - 20 + 1 = 401
+    self._airdrop(honoraries, step)
+
+
+@external
+def airdrop_discorders(discorders: address[NUM_EACH_AIRDROP]):
+    # airdrop the discorders (381-400)
+    step: uint256 = self.token_count - NUM_EACH_AIRDROP + 1 # 400 - 20 + 1
+    self._airdrop(discorders, step)
 
 
 ### ERC721-URI STORAGE FUNCTIONS ###

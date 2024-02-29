@@ -44,7 +44,3 @@ def main():
         premint_addrs
         # publish=True
     )
-        # max_priority_fee="100 gwei",
-        # max_fee="900 gwei",
-        # max_gas="1 ether",
-        # gas_limit=30000000

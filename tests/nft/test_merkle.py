@@ -9,12 +9,11 @@ def test_merkle_whitelist(deployer, project, preminter):
         bytes.fromhex("9e64e1669c93e236e43dc7d96e5387adbdf564359dd6aca2cda9982f0caef977"),
         bytes.fromhex("9e64e1669c93e236e43dc7d96e5387adbdf564359dd6aca2cda9982f0caef977"),
         [preminter] * 20
-        # [5, 32, 56, 69, 87, 102, 123, 175, 189, 221, 232, 251, 277, 299, 301, 312, 331, 343, 374, 388]
     )
     
-    larp_nft.start_wl_mint(sender=deployer)
     deployer.transfer("0x3A348d15f925236Ebb93F0aF6b25b84d540399DD", int(1e18))
 
+    larp_nft.start_wl_mint(sender=deployer)
     with accounts.use_sender("0x3A348d15f925236Ebb93F0aF6b25b84d540399DD"):
         larp_nft.whitelistMint(
             [

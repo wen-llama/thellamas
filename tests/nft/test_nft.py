@@ -172,7 +172,7 @@ def test_allowlist_mint_address_already_minted_max_amount(token, alice, deployer
         value="0.1 ether",
         gas_limit=int(1e8)
     )
-    assert token.ownerOf(0) == alice
+    assert token.ownerOf(1) == alice
     with ape.reverts("revert: Already minted"):
         token.allowlistMint(
             [
@@ -548,7 +548,7 @@ def test_approval(token, deployer, bob, charlie):
     # Mint
     _mint(token, deployer)
 
-    token_id = 0
+    token_id = 1
 
     # Approve for charlie
     txn_receipt = token.approve(charlie, token_id, sender=deployer)
