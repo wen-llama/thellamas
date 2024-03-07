@@ -4,7 +4,7 @@ from eth_utils import keccak, to_wei
 
 def main():
     deployer = accounts.load("llama_deployer")
-    llamas_addr = "0xde8991d758f36cad8c546b0983deae7bdc99a8ab"
+    llamas_addr = "0xde8991d758f36cad8c546b0983deae7bdc99a8ab" # TODO: CHANGE THIS
     time_buffer = 300
     reserve_price = to_wei(0.2, "ether")
     min_bid_increment_percentage = 2
