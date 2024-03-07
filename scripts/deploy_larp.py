@@ -39,8 +39,8 @@ def main():
 
     deployer.deploy(
         project.Larp,
-        wl_merkle_root,
         al_merkle_root,
+        wl_merkle_root,
         premint_addrs
         # publish=True
     )
