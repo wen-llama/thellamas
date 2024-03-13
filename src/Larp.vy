@@ -127,8 +127,8 @@ def __init__(al_merkle_root: bytes32, wl_merkle_root: bytes32, honoraries: addre
     self.symbol = "LARP"
     self.name = "LARP Collective"
     self.owner = msg.sender
-    self.contract_uri = "https://ivory-fast-planarian-364.mypinata.cloud/ipfs/QmPAS4WmxAcqRnKyUS1KS4pCeWDMmZWyph6N3DzE6rCb7L"
-    self.default_uri = "https://ivory-fast-planarian-364.mypinata.cloud/ipfs/QmSBtCSpm3HzwfqBYLLYb7d1AkbQ73cvGWu3bbk4vP2PGd"
+    self.contract_uri = "https://metadata.blocmates.com"
+    self.default_uri = "https://metadata.blocmates.com/default"
     self.al_mint_started = False
     self.wl_mint_started = False
     self.minter = msg.sender
